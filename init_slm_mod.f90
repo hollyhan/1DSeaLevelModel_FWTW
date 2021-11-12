@@ -64,7 +64,7 @@ end module planets_mod
 !! =====================================================================================================netCDF I/O mod===! 
 module io_mod
 !---------------------------------------------------------------------------------------------------------------------------
-   use user_specs_mod, only: nglv, ext, ftype
+   use user_specs_mod, only: nglv, ext, ftype, gridfolder, grid_lat, grid_lon
    use netCDF
    implicit none
 
@@ -81,14 +81,16 @@ module io_mod
    
    end subroutine check
    
-    
-   subroutine write_nf90(filename, varname_nc, cmode, data_slm, longrid, latgrid)
+   
+   subroutine write_nf90(data_slm, filename, filepath, varname_nc, cmode, suffix, fext)
 
-	   character (len = *), intent(in) :: filename, varname_nc !filename and variable name encoded in netCDF file
-	   integer, intent(in) :: cmode                  ! options: NF90_CLOBBER, NF90_NOCLOBBER etc
+	   character (len = *), intent(in) :: filename, filepath, varname_nc 
+	   integer, intent(in) :: cmode                        ! options: NF90_CLOBBER, NF90_NOCLOBBER etc
 	   integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
 	   integer, dimension(2) :: dimids
 	   real, dimension(nglv,2*nglv), intent(in) :: data_slm !data in the SLM written to the netCDF file
+	   character (len = *), optional ::  suffix 
+	   character (len = *), optional :: fext
 	   real, dimension(nglv)        :: latgrid
 	   real, dimension(2*nglv)      :: longrid
 	   
@@ -99,9 +101,33 @@ module io_mod
 	   character (len = *), parameter :: LAT_UNITS = "degrees"
 	   character (len = *), parameter :: LON_UNITS = "degrees_east"
 	   
-       !write out data
-       call check( nf90_create(filename, cmode, ncid) )   ! create a netCDF file
+	   
+	   ! Read in lat-lon grid files
+	   open(unit = 1, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
+	   read(1,*) latgrid
+	   close(1)
 
+	   open(unit = 1, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
+	   read(1,*) longrid
+	   close(1)
+	   
+       !write out data
+	   
+	   !create the file
+   	   if (present (suffix)) then
+ 		  if (present (fext)) then 
+ 		     call check( nf90_create(filepath//filename//trim(suffix)//fext, cmode, ncid) ) 
+ 		  else
+ 			 call check( nf90_create(filepath//filename//trim(suffix)//ext, cmode, ncid) ) 
+ 		  endif
+       else
+		  if (present (fext)) then 
+		     call check( nf90_create(filepath//filename//fext, cmode, ncid) ) 
+		  else
+			 call check( nf90_create(filepath//filename//ext, cmode, ncid) ) 
+		  endif
+   	   endif
+	   
        call check( nf90_def_dim(ncid, 'lon', nglv*2, lon_dimid)  ) ! Define the dimensions of the griddata
        call check( nf90_def_dim(ncid, 'lat', nglv,   lat_dimid)  )
 
@@ -118,16 +144,36 @@ module io_mod
        call check( nf90_close(ncid))
 	   
    end subroutine write_nf90
-
-
-   subroutine read_nf90(filename, varname_nc, data_slm)
+   
+   
+   subroutine read_nf90(data_slm, filename, filepath, varname_nc,  suffix, fext)
 	     
-	   character (len = *), intent(in) :: filename, varname_nc !file name and variable name in nc file !
+	   character (len = *), intent(in) :: filename,  filepath, varname_nc !file name and variable name in nc file !
 	   real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
 	   real, dimension(nglv,2*nglv), intent(out) :: data_slm
+	   character (len = *), optional ::  suffix 
+	   character (len = *), optional :: fext
 	   integer :: ncid, varid 
 	   
-	   call check( nf90_open(filename, nf90_nowrite, ncid) ) !open the file
+	   !This does not work - why? 
+       !if (.not.present (fext)) then 
+      !	    fext == ext
+     !  end if
+	   
+   	   if (present (suffix)) then
+ 		  if (present (fext)) then 
+ 		     call check( nf90_open(filepath//filename//trim(suffix)//fext, nf90_nowrite, ncid) ) !open the file
+ 		  else
+ 			 call check( nf90_open(filepath//filename//trim(suffix)//ext, nf90_nowrite, ncid) ) !open the file
+ 		  endif
+       else
+		  if (present (fext)) then 
+		     call check( nf90_open(filepath//filename//fext, nf90_nowrite, ncid) ) !open the file
+		  else
+			 call check( nf90_open(filepath//filename//ext, nf90_nowrite, ncid) ) !open the file
+		  endif
+   	   endif
+	   
 	   call check( nf90_inq_varid(ncid, varname_nc, varid) ) !get varid of the data variable
 	   call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
 	   call check( nf90_close(ncid) ) ! close the file

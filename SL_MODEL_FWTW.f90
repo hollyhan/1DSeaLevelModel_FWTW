@@ -11,8 +11,9 @@
 
 
 include 'spharmt.f90' ! Spherical harmonic transform module
-include 'init_slm_mod.f90'
 include 'user_specs_mod.f90'
+include 'init_slm_mod.f90'
+
 
 !=======================================================================================================================!
 !                                                      MAIN BLOCK                                                       !
@@ -85,11 +86,11 @@ real, dimension(npam,norder) :: rprimeT,rT      ! Love numbers (tidal)
 real, dimension(norder) :: kTE, hTE             ! Love numbers (tidal)
 
 ! grid lat-lon 
-real, dimension(nglv)        :: latgrid
-real, dimension(2*nglv)      :: longrid
+!real, dimension(nglv)        :: latgrid
+!real, dimension(2*nglv)      :: longrid
 
 ! Model calculations
-real, dimension(nglv,2*nglv) :: glw_matrix              ! weigtht in the Gaussian-Legendre grid 
+!real, dimension(nglv,2*nglv) :: glw_matrix              ! weigtht in the Gaussian-Legendre grid 
 real, dimension(nglv,2*nglv) :: deltaslxy, dslxy         ! Total sea level change, 
                                                          !  total spatially heterogeneous sea level change
 real, dimension(nglv,2*nglv) :: icestarxy                ! Grounded ice thickness
@@ -377,19 +378,19 @@ if (coupling) then
 	if (ftype == 'text') then
 		call read_txt(nh_iceload, 'NH_iceload', folder_coupled)
 	elseif (ftype == 'binary') then 
-        call read_nf90(folder_coupled//'NH_iceload'//ext, 'hice', nh_iceload)
+		call read_nf90(nh_iceload, 'NH_iceload', folder_coupled, 'hice')
 	endif
 	
 endif
 
 ! Read in lat-lon grid files
-open(unit = 1, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
-read(1,*) latgrid
-close(1)
+!open(unit = 1, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
+!read(1,*) latgrid
+!close(1)
 
-open(unit = 1, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
-read(1,*) longrid
-close(1)
+!open(unit = 1, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
+!read(1,*) longrid
+!close(1)
 
 
 !========================================================================================================================
@@ -416,7 +417,7 @@ if (nmelt==0) then
 	if (ftype == 'text') then
 		call read_txt(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
 	elseif (ftype == 'binary') then 
-	    call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,1))
+		call read_nf90(icexy(:,:,1), icemodel, inputfolder_ice, 'hice', suffix=numstr)
 	endif
 	    
     !  Initialize topography (STEP 1)
@@ -427,7 +428,7 @@ if (nmelt==0) then
 		if (ftype == 'text') then
 			call read_txt(tinit_0, topo_initial, inputfolder)
 		elseif (ftype == 'binary') then 
-	        call read_nf90(inputfolder//topo_initial//ext, 'topography', tinit_0)
+			call read_nf90(tinit_0, topo_initial, inputfolder, 'topography')
 		endif
 
     else  ! if initial topo is unknown
@@ -437,7 +438,8 @@ if (nmelt==0) then
 		if (ftype == 'text') then
 			call read_txt(truetopo, topomodel, inputfolder)
 		elseif (ftype == 'binary') then 
-	        call read_nf90(inputfolder//topomodel//ext, 'topography',truetopo)
+	        !call read_nf90(inputfolder//topomodel//ext, 'topography',truetopo)
+			call read_nf90(truetopo, topomodel, inputfolder, 'topography')
 		endif
       
        ! if topography is not iteratively getting improved, or if at the first loop of outer-iteration
@@ -455,7 +457,8 @@ if (nmelt==0) then
    		   if (ftype == 'text') then
 	           call read_txt(pred_pres_topo, 'pred_pres_topo_', outputfolder, suffix=iterstr)	   
    		   elseif (ftype == 'binary') then 
-   	           call read_nf90(outputfolder//'pred_pres_topo_'//trim(iterstr)//ext, 'topography', pred_pres_topo)
+			   call read_nf90(pred_pres_topo, 'pred_pres_topo_', outputfolder, &
+			   & 'topography', suffix=iterstr)	
    	   	   endif
        
   
@@ -463,7 +466,7 @@ if (nmelt==0) then
    	  	   if (ftype == 'text') then
 			   call read_txt(tinit_0_last, 'tgrid0_', outputfolder, suffix=iterstr)	
    		   elseif (ftype == 'binary') then 
-    	       call read_nf90(outputfolder//'tgrid0_'//trim(iterstr)//ext, 'topography', tinit_0_last)
+			   call read_nf90(tinit_0_last, 'tgrid0_', outputfolder, 'topography', suffix=iterstr)
     	   endif
 
            ! compute topography correction for the initial topography 
@@ -480,7 +483,7 @@ if (nmelt==0) then
   	   if (ftype == 'text') then
 		   call read_txt(nh_bedrock, 'NH_bedrock', folder_coupled)	
 	   elseif (ftype == 'binary') then 
-	       call read_nf90(folder_coupled//'NH_bedrock'//ext, 'topography', nh_bedrock)
+		   call read_nf90(nh_bedrock, 'NH_bedrock', folder_coupled, 'topography')	
 	   endif
 
        
@@ -518,8 +521,7 @@ if (nmelt==0) then
 	   if (ftype == 'text') then
 		   call write_newtxt(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
 	   elseif (ftype == 'binary') then 	
-           call write_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', NF90_CLOBBER, icexy(:,:,nfiles), &
-		   & longrid, latgrid)
+		   call write_nf90(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, 'hice', NF90_CLOBBER, suffix=numstr)
 	   endif
 		   
     endif ! end if (coupling)
@@ -528,7 +530,7 @@ if (nmelt==0) then
 	if (ftype == 'text') then
 		call write_newtxt(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
 	elseif (ftype == 'binary') then 
-        call write_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', NF90_CLOBBER, tinit_0, longrid, latgrid)
+	  call write_nf90(tinit_0(:,:), 'tgrid', outputfolder, 'topography', NF90_CLOBBER, suffix=numstr)
 	endif
 	
 	
@@ -548,7 +550,7 @@ if (nmelt==0) then
 	 if (ftype == 'text') then
 		 call write_newtxt(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
      elseif (ftype == 'binary') then 
-	     call write_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', NF90_CLOBBER, cxy0, longrid, latgrid)
+         call write_nf90(cxy0(:,:), 'ocean', outputfolder, 'oceanFunction', NF90_CLOBBER, suffix=numstr)
      endif
 	 	  
 		    
@@ -568,7 +570,8 @@ if (nmelt==0) then
     if (ftype == 'text') then
 		call write_newtxt(beta0(:,:), 'beta', outputfolder, suffix=numstr)
     elseif (ftype == 'binary') then 
-        call write_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', NF90_CLOBBER, beta0, longrid, latgrid)
+        call write_nf90(beta0(:,:), 'beta', outputfolder, 'betaFunction', NF90_CLOBBER, suffix=numstr)
+	
     endif
     
    
@@ -694,7 +697,7 @@ if (nmelt.GT.0) then
 	      if (ftype == 'text') then
 			  call read_txt(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
 	      elseif (ftype == 'binary') then 
-	          call read_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', icexy(:,:,n))
+			  call read_nf90(icexy(:,:,n), icemodel_out, outputfolder_ice, 'hice', suffix=numstr)
 	      endif
 
        enddo
@@ -713,7 +716,7 @@ if (nmelt.GT.0) then
        if (ftype == 'text') then
 		   call read_txt(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
    	   elseif (ftype == 'binary') then       
-       	   call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,nfiles))
+		   call read_nf90(icexy(:,:,nfiles), icemodel, inputfolder_ice, 'hice', suffix=numstr)
    	   endif
 	    
        if (patch_ice) then 
@@ -752,8 +755,9 @@ if (nmelt.GT.0) then
 		   
 	       if (ftype == 'text') then
 			   call read_txt(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
+			   call write_nf90(icexy(:,:,n), icemodel_out, inputfolder_ice, 'hice', NF90_CLOBBER, suffix=numstr, fext='.nc')
 	   	   elseif (ftype == 'binary') then 
-	       	   call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,n))
+			   call read_nf90(icexy(:,:,n), icemodel, inputfolder_ice, 'hice', suffix=numstr)
 	   	   endif
         enddo  
     
@@ -787,7 +791,7 @@ if (nmelt.GT.0) then
 	if (ftype == 'text') then
 		call read_txt(tinit_0, 'tgrid0', outputfolder)
 	elseif (ftype == 'binary') then 
-        call read_nf90(outputfolder//'tgrid0'//ext, 'topography', tinit_0)
+		call read_nf90(tinit_0, 'tgrid0', outputfolder, 'topography')
 	endif 
   
     j = TIMEWINDOW(1) ! first element of the time window as the initial file
@@ -799,7 +803,7 @@ if (nmelt.GT.0) then
     if (ftype == 'text') then
 		call read_txt(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
     elseif (ftype == 'binary') then 
-        call read_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', cxy0)
+		call read_nf90(cxy0(:,:), 'ocean', outputfolder, 'oceanFunction', suffix=numstr)
     endif
     
     if (nmelt == 1) then 
@@ -810,7 +814,7 @@ if (nmelt.GT.0) then
     if (ftype == 'text') then
 		call read_txt(beta0(:,:), 'beta', outputfolder, suffix=numstr)
     elseif (ftype == 'binary') then 
-        call read_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', beta0)
+		call read_nf90(beta0(:,:), 'beta', outputfolder, 'betaFunction', suffix=numstr)
     endif
 
     if (tpw) then
@@ -869,7 +873,7 @@ if (nmelt.GT.0) then
 	if (ftype == 'text') then
 		call read_txt(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
 	elseif (ftype == 'binary') then 
-	    call read_nf90(outputfolder//'tgrid'//trim(numstr2)//ext, 'topography', topoxy_m1)
+		call read_nf90(topoxy_m1(:,:), 'tgrid', outputfolder, 'topography', suffix=numstr2)
 	endif
  
     ! condition for time window travel
@@ -885,7 +889,7 @@ if (nmelt.GT.0) then
 		if (ftype == 'text') then
 			call read_txt(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
 		elseif (ftype == 'binary') then 	
-		    call read_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', tinit)
+			call read_nf90(tinit(:,:), 'tgrid', outputfolder, 'topography', suffix=numstr)
 		endif
 
     endif
@@ -902,7 +906,7 @@ if (nmelt.GT.1) then
    if (ftype == 'text') then
 	   call read_txt(cxy(:,:), 'ocean', outputfolder, suffix=numstr)
    elseif (ftype == 'binary') then 
-       call read_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', cxy)
+	   call read_nf90(cxy(:,:), 'ocean', outputfolder, 'oceanFunction', suffix=numstr)
    endif
    
    ! if there has been more than one melting episode
@@ -1384,21 +1388,21 @@ if (nmelt.GT.0) then
    if (ftype == 'text') then
 	   call write_newtxt(topoxy, 'tgrid', outputfolder, suffix=numstr)
    elseif (ftype == 'binary') then 
-       call write_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', NF90_CLOBBER, topoxy, longrid, latgrid)
+       call write_nf90(topoxy, 'tgrid', outputfolder, 'topography', NF90_CLOBBER, suffix=numstr)
    endif
    
    ! converged ocean function at the current timestep
    if (ftype == 'text') then
 	   call write_newtxt(cxy, 'ocean', outputfolder, suffix=numstr)
    elseif (ftype == 'binary') then 
-       call write_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', NF90_CLOBBER, cxy, longrid, latgrid)
+       call write_nf90(cxy, 'ocean', outputfolder, 'oceanFunction', NF90_CLOBBER, suffix=numstr)
    endif   
    
    ! converged beta function at the current timestpe
    if (ftype == 'text') then   
 	   call write_newtxt(beta, 'beta', outputfolder, suffix=numstr)
    elseif (ftype == 'binary') then 
-       call write_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', NF90_CLOBBER, beta, longrid, latgrid)
+       call write_nf90(beta, 'beta', outputfolder, 'betaFunction', NF90_CLOBBER, suffix=numstr)
    endif    
 	   
    ! output converged total ocean loading changes 
@@ -1425,15 +1429,14 @@ if (nmelt.GT.0) then
       if (ftype == 'text') then
 		  call write_newtxt(topoxy, 'pred_pres_topo_', outputfolder, suffix=iterstr)
       elseif (ftype == 'binary') then 
-          call write_nf90(outputfolder//'pred_pres_topo_'//trim(iterstr)//ext, 'topography', NF90_CLOBBER, &
-		  & topoxy, longrid, latgrid)
+	      call write_nf90(topoxy, 'pred_pres_topo_', outputfolder, 'topography', NF90_CLOBBER, suffix=iterstr)
       endif
 
       ! write out the initial topography of the simulation at the currect outer-loop into a file
       if (ftype == 'text') then
 		  call write_newtxt(tinit_0, 'tgrid0_', outputfolder, suffix=iterstr)
       elseif (ftype == 'binary') then 
-          call write_nf90(outputfolder//'tgrid0_'//trim(iterstr)//ext, 'topography', NF90_CLOBBER, tinit_0, longrid, latgrid)
+          call write_nf90(tinit_0, 'tgrid0_', outputfolder, 'topography', NF90_CLOBBER, suffix=iterstr)
       endif
    endif 
    
@@ -1441,8 +1444,7 @@ if (nmelt.GT.0) then
       if (ftype == 'text') then
 		  call write_newtxt(rr(:,:,n), 'R', outputfolder, suffix=numstr)
       elseif (ftype == 'binary') then 
-          call write_nf90(outputfolder//'R'//trim(numstr)//ext, 'solidEarth displacement', NF90_CLOBBER, rr(:,:,n), & 
-		  & longrid, latgrid)
+	      call write_nf90(rr(:,:,n), 'R', outputfolder, 'solidEarth displacement', NF90_CLOBBER, suffix=numstr)
       endif
       
       ! Compute geoid displacement
@@ -1451,8 +1453,7 @@ if (nmelt.GT.0) then
       if (ftype == 'text') then
 		   call write_newtxt(gg(:,:,n), 'G', outputfolder, suffix=numstr)
       elseif (ftype == 'binary') then 
-          call write_nf90(outputfolder//'G'//trim(numstr)//ext, 'geoid displacement', NF90_CLOBBER, gg(:,:,n), & 
-   	      & longrid, latgrid)
+           call write_nf90(gg(:,:,n), 'G', outputfolder, 'geoid displacement', NF90_CLOBBER, suffix=numstr)
       endif
 
    endif
@@ -1473,16 +1474,14 @@ if (nmelt.GT.0) then
       if (ftype == 'text') then
 		  call write_newtxt(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled)
       elseif (ftype == 'binary') then 
-          call write_nf90(folder_coupled//'bedrock'//ext, 'geoid_displacement', NF90_CLOBBER, &
-		  & topoxy_m1(:,:)-topoxy(:,:),longrid, latgrid)
+	      call write_nf90(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled, 'topography change', NF90_CLOBBER)
       endif
     
       !write out the current ice load as a new file
       if (ftype == 'text') then
 		  call write_newtxt(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
       elseif (ftype == 'binary') then       
-          call write_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', NF90_CLOBBER, &
-		  & icexy(:,:,nfiles),longrid, latgrid)
+          call write_nf90(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, 'hice', NF90_CLOBBER, suffix=numstr)
       endif
 
    endif !endif coupling
