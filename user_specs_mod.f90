@@ -61,14 +61,14 @@ module user_specs_mod
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
    ! Input directory
-   character(*), parameter :: inputfolder_ice  = '../INPUT_FILES/Icemodels/'
-   character(*), parameter :: inputfolder  = '../INPUT_FILES/'
-   character(*), parameter :: planetfolder = '../INPUT_FILES/Earthmodels/'   
-   character(*), parameter :: gridfolder = '../INPUT_FILES/Gridfiles/'   
+   character(*), parameter :: inputfolder_ice  = 'INPUT_FILES/Icemodels/'
+   character(*), parameter :: inputfolder  = 'INPUT_FILES/'
+   character(*), parameter :: planetfolder = 'INPUT_FILES/Earthmodels/'   
+   character(*), parameter :: gridfolder = 'INPUT_FILES/Gridfiles/'   
 	  
    ! Output directory
-   character(*), parameter :: outputfolder = 'OUTPUT_SLM_test/' 
-   character(*), parameter :: outputfolder_ice = '../ICELOAD_SLM/'
+   character(*), parameter :: outputfolder = 'OUTPUT_SLM/' 
+   character(*), parameter :: outputfolder_ice = 'ICELOAD_SLM/'
 
    ! Other directory
    character(*), parameter :: folder_coupled = '' 
@@ -77,9 +77,9 @@ module user_specs_mod
    ! Since the code does not explicitly specify the precision (single or double) of the input/output files, an 
    !  extension could be used to designate the type. Alternatively, the files could also be delimited text files (to 
    !  be implemented later). Specify the common extension here (applicable to the names of ALL input/output files): 
-   character(4), parameter :: ext = '.nc'       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'binary'
+   character(4), parameter :: ext = ''       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'binary'
    ! ... and their file type:
-   character(*), parameter :: fType = 'binary'  ! 'binary' | 'text' | empty quote '' for both binary and text format
+   character(*), parameter :: fType = 'text'  ! 'binary' | 'text' | empty quote '' for both binary and text format
    
    ! Various selection ================================================================================================!
    character(*), parameter :: whichplanet   = 'earth'                    ! e.g. 'earth', 'Mars', etc.
@@ -130,7 +130,7 @@ module user_specs_mod
    ! if you would like a forward simulation WITHOUT a timewindow, simply set 'L_sim' equal to 'Ldt1',
    ! and set Ldt2, Ldt3 and Ldt4 to 0. 
 
-   integer, parameter :: L_sim = 500! total length of a simulation, in years
+   integer, parameter :: L_sim = 300! total length of a simulation, in years
    
    !internal time step intervals (dt's cannot be set as 0 but Ldt's can be)
    !**NOTE** dt# values should be defined such that dt#/dt1 is a positive integer
@@ -139,7 +139,7 @@ module user_specs_mod
    integer, parameter :: dt3 = 10!
    integer, parameter :: dt4 = 10! 
    
-   integer, parameter :: Ldt1 = 500! total length of time over which dt1 covers 
+   integer, parameter :: Ldt1 = 300! total length of time over which dt1 covers 
    integer, parameter :: Ldt2 = 0! 
    integer, parameter :: Ldt3 = 0!
    integer, parameter :: Ldt4 = 0!
