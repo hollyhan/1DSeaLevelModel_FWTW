@@ -64,7 +64,7 @@ end module planets_mod
 !! =====================================================================================================netCDF I/O mod===! 
 module io_mod
 !---------------------------------------------------------------------------------------------------------------------------
-   use user_specs_mod, only: nglv, ext, ftype
+   use user_specs_mod, only: nglv, ext, fType, outputfolder, gridfolder, grid_lat, grid_lon
    use netCDF
    implicit none
 
@@ -81,35 +81,125 @@ module io_mod
    
    end subroutine check
    
-    
-   subroutine write_nf90(filename, varname_nc, cmode, data_slm, longrid, latgrid)
+   subroutine read_sl(data_slm, filename, filepath, suffix, fext)
+	   character (len = *), intent (in) :: filename, filepath
+	   real, dimension(nglv,2*nglv), intent(inout) :: data_slm 
+	 !  integer, intent(in), optional :: indx_time, indx_topoloop
+	   character (len = *), optional :: suffix, fext
+	 !  character(8) :: suffix
+	 
 
-	   character (len = *), intent(in) :: filename, varname_nc !filename and variable name encoded in netCDF file
-	   integer, intent(in) :: cmode                  ! options: NF90_CLOBBER, NF90_NOCLOBBER etc
+	   ! indentify attributes
+	!   select case(filename)
+	!      case ("tgrid")
+!!		     filepath = outputfolder
+!	      case ("beta")
+!		     filepath = outputfolder
+!	      case ("ocean")
+!		     filepath = outputfolder 
+ !      end select
+
+	   
+	 !  suffix = ''
+	   
+
+	!   if (present (indx_time)) then
+	!	   write(numstr,'(I4)') indx_time
+	!	   numstr = trim(adjustl(numstr))
+	!	   suffix == suffix//numstr
+	 !  endif
+	   
+	 !  if (present (indx_topoloop)) then 
+	!	   write(numstr,'(I4)') indx_topoloop
+	!	   numstr = trim(adjustl(numstr))
+	!	   suffix == suffix//'_'//numstr
+	!   endif
+	   
+	   if (fType == 'text') then
+		   call read_txt(data_slm, filename, filepath, suffix, fext)
+	   elseif (fType == 'binary') then 
+		   call read_nf90(data_slm, filename, filepath, suffix, fext)
+	   endif
+	   
+   end subroutine read_sl
+   
+   subroutine write_sl(data_slm, filename, filepath, suffix, fext)
+	   character (len = *), intent (in) :: filename, filepath
+	   real, dimension(nglv,2*nglv), intent(in) :: data_slm 
+	   character (len = *), optional :: suffix, fext
+	   
+	   ! indentify attributes
+	  ! select case(filename)
+	   !   case ("tgrid")
+		!     filepath = outputfolder
+	     ! case ("beta")
+		 !    filepath = outputfolder
+	     ! case ("ocean")
+		 !    filepath = outputfolder 
+       !end select
+
+	   if (fType == 'text') then
+		   call write_txt(data_slm, filename, filepath, suffix, fext)
+	   elseif (fType == 'binary') then 
+		   call write_nf90(data_slm, filename, filepath, suffix, fext)
+	   endif
+	   
+   end subroutine write_sl
+    
+   
+   subroutine write_nf90(data_slm, filename, filepath, suffix, fext)
+
+	   character (len = *), intent(in) :: filename, filepath
 	   integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
 	   integer, dimension(2) :: dimids
 	   real, dimension(nglv,2*nglv), intent(in) :: data_slm !data in the SLM written to the netCDF file
+	   character (len = *), optional ::  suffix 
+	   character (len = *), optional :: fext
 	   real, dimension(nglv)        :: latgrid
 	   real, dimension(2*nglv)      :: longrid
 	   
 	   ! attribute IDs for I/O in netCDF
-	   character (len = *), parameter :: UNITS = "units"
-	   character (len = *), parameter :: TOPO_UNITS = "meters"
-	   character (len = *), parameter :: SL_UNITS = "meters"
-	   character (len = *), parameter :: LAT_UNITS = "degrees"
-	   character (len = *), parameter :: LON_UNITS = "degrees_east"
+	   !character (len = *), parameter :: UNITS = "units"
+	   !character (len = *), parameter :: TOPO_UNITS = "meters"
+	   !character (len = *), parameter :: SL_UNITS = "meters"
+	   !character (len = *), parameter :: LAT_UNITS = "degrees"
+	   !character (len = *), parameter :: LON_UNITS = "degrees_east"
+	   
+	   
+	   ! Read in lat-lon grid files
+	   open(unit = 1, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
+	   read(1,*) latgrid
+	   close(1)
+
+	   open(unit = 1, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
+	   read(1,*) longrid
+	   close(1)
 	   
        !write out data
-       call check( nf90_create(filename, cmode, ncid) )   ! create a netCDF file
-
+	   
+	   !create the file
+   	   if (present (suffix)) then
+ 		  if (present (fext)) then 
+ 		     call check( nf90_create(filepath//filename//trim(suffix)//fext, nf90_clobber, ncid) ) 
+ 		  else
+ 			 call check( nf90_create(filepath//filename//trim(suffix)//ext, nf90_clobber, ncid) ) 
+ 		  endif
+       else
+		  if (present (fext)) then 
+		     call check( nf90_create(filepath//filename//fext, nf90_clobber, ncid) ) 
+		  else
+			 call check( nf90_create(filepath//filename//ext, nf90_clobber, ncid) ) 
+		  endif
+   	   endif
+	   
        call check( nf90_def_dim(ncid, 'lon', nglv*2, lon_dimid)  ) ! Define the dimensions of the griddata
        call check( nf90_def_dim(ncid, 'lat', nglv,   lat_dimid)  )
 
        dimids =  (/ lon_dimid, lat_dimid /)                        ! Define the dimension of the variable
 
-       call check( nf90_def_var(ncid, varname_nc, NF90_DOUBLE, dimids, varid)) ! Define variable
-       call check( nf90_def_var(ncid, 'lat', NF90_DOUBLE, lat_dimid, lat_varid))
-       call check( nf90_def_var(ncid, 'lon', NF90_DOUBLE, lon_dimid, lon_varid))
+       call check( nf90_def_var(ncid, filename, nf90_double, dimids, varid)) ! Define variable
+       call check( nf90_def_var(ncid, 'lat', nf90_double, lat_dimid, lat_varid))
+       call check( nf90_def_var(ncid, 'lon', nf90_double, lon_dimid, lon_varid))
        call check( nf90_enddef(ncid)) ! End definition
 
        call check( nf90_put_var(ncid, varid, reshape(data_slm,[2*nglv,nglv]))) !write data
@@ -118,22 +208,58 @@ module io_mod
        call check( nf90_close(ncid))
 	   
    end subroutine write_nf90
-
-
-   subroutine read_nf90(filename, varname_nc, data_slm)
+   
+   subroutine read_nf90(data_slm, filename, filepath, suffix, fext)
 	     
-	   character (len = *), intent(in) :: filename, varname_nc !file name and variable name in nc file !
+	   character (len = *), intent(in) :: filename,  filepath !file name and path
 	   real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
 	   real, dimension(nglv,2*nglv), intent(out) :: data_slm
+	   character (len = *), optional ::  suffix 
+	   character (len = *), optional :: fext
 	   integer :: ncid, varid 
 	   
-	   call check( nf90_open(filename, nf90_nowrite, ncid) ) !open the file
-	   call check( nf90_inq_varid(ncid, varname_nc, varid) ) !get varid of the data variable
+	   !This does not work - why? 
+       !if (.not.present (fext)) then 
+      !	    fext == ext
+     !  end if
+	   
+   	   if (present (suffix)) then
+ 		  if (present (fext)) then 
+ 		     call check( nf90_open(filepath//filename//trim(suffix)//fext, nf90_nowrite, ncid) ) !open the file
+ 		  else
+ 			 call check( nf90_open(filepath//filename//trim(suffix)//ext, nf90_nowrite, ncid) ) !open the file
+ 		  endif
+       else
+		  if (present (fext)) then 
+		     call check( nf90_open(filepath//filename//fext, nf90_nowrite, ncid) ) !open the file
+		  else
+			 call check( nf90_open(filepath//filename//ext, nf90_nowrite, ncid) ) !open the file
+		  endif
+   	   endif
+	   
+	   call check( nf90_inq_varid(ncid, filename, varid) ) !get varid of the data variable
 	   call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
 	   call check( nf90_close(ncid) ) ! close the file
 	   data_slm = reshape(data_temp,[nglv,2*nglv])
 	   
    end subroutine read_nf90
+   
+
+  ! subroutine read_nf90(data_slm, filename, varname_nc, data_slm)!
+	     
+!	   character (len = *), intent(in) :: filename, varname_nc !file name and variable name in nc file !
+!	   real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
+!	   real, dimension(nglv,2*nglv), intent(out) :: data_slm
+!	   integer :: ncid, varid 
+	   
+!	   call check( nf90_open(filename, nf90_nowrite, ncid) ) !open the file
+!	   call check( nf90_inq_varid(ncid, varname_nc, varid) ) !get varid of the data variable
+!	   call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
+!	   call check( nf90_close(ncid) ) ! close the file
+!	   data_slm = reshape(data_temp,[nglv,2*nglv])
+	   
+ !  end subroutine read_nf90
+  
    
    subroutine check_ncFile(ncvar, slmvar, varname) 
 	   
@@ -148,7 +274,7 @@ module io_mod
 			   
    end subroutine check_ncFile
    
-   subroutine write_newtxt(data_slm, filename, filepath, suffix, fext)
+   subroutine write_txt(data_slm, filename, filepath, suffix, fext)
    	
 	real, dimension(nglv,2*nglv), intent(in) :: data_slm
    	character (len = *), intent(in) :: filename, filepath 
@@ -170,7 +296,7 @@ module io_mod
         close(1)
 	endif
 
-   end subroutine write_newtxt
+   end subroutine write_txt
    
    subroutine read_txt(data_slm, filename, filepath, suffix, fext)
    	

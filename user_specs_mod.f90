@@ -61,10 +61,10 @@ module user_specs_mod
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
    ! Input directory
-   character(*), parameter :: inputfolder_ice  = 'INPUT_FILES/Icemodels/'
-   character(*), parameter :: inputfolder  = 'INPUT_FILES/'
-   character(*), parameter :: planetfolder = 'INPUT_FILES/Earthmodels/'   
-   character(*), parameter :: gridfolder = 'INPUT_FILES/Gridfiles/'   
+   character(*), parameter :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
+   character(*), parameter :: inputfolder  = 'INPUT_FILES/others/'
+   character(*), parameter :: planetfolder = 'INPUT_FILES/earthmodel/'   
+   character(*), parameter :: gridfolder = 'INPUT_FILES/others/'   
 	  
    ! Output directory
    character(*), parameter :: outputfolder = 'OUTPUT_SLM/' 
@@ -87,8 +87,8 @@ module user_specs_mod
    character(*), parameter :: icemodel      = 'AISload_Run85_0_0_'       ! Common name of ice files in 'inputfolder_ice'
    character(*), parameter :: icemodel_out  = 'AISload_Run85_0_0_'       ! Name of ice files in 'outputfolder_ice'
    character(*), parameter :: timearray     = 'times'                    ! Name of times array text file
-   character(*), parameter :: topomodel     = 'etopo2_512_ice6gC'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka       
-   character(*), parameter :: topo_initial  = 'etopo2_512_ice6gC'        
+   character(*), parameter :: topomodel     = 'etopo2_512_AISbedmap2'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka       
+   character(*), parameter :: topo_initial  = 'etopo2_512_AISbedmap2'        
    character(*), parameter :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
    character(*), parameter :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
    

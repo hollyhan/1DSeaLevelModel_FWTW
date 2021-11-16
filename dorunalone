@@ -1,0 +1,39 @@
+#!/bin/csh -fx
+
+# runs sl model as standalone
+
+# 1) copy fortran files from folder SEANEW_alone into run directory
+# 2) to run alone, itersl should be set to zero - no outer iteration
+# 3) put input iceload# files into the folder SLtemp, where #=0 is for
+# start of run
+# 4) put initial topography file in run directory and call it tgrid.0
+ set itersl = 1
+ set ncalls = 3
+ set dtime = 100
+ set starttime=0
+
+
+ 
+ @ iter = 0
+#====================
+ while ($iter <= $ncalls)     #  max # of iterations 
+#==================
+ set iter = $iter
+ #@ time = $iter*$dtime/1000
+ #@ timem1 = ($iter - 1)*$dtime/1000
+ #@ timeice = $starttime + $iter*$dtime
+
+
+#slmodel.exe $itersl $iter $iterm1 $ncalls $time $timem1 $dtime $timeice 
+echo "haha"
+# ./slmodel.exe $itersl $iter $ncalls $dtime $starttime >&! x
+./slmodel.exe $itersl $iter $dtime $starttime
+@ iter = $iter + 1
+#==
+ end
+#==
+
+#rm SLtemp/
+echo "Maximum number of iterations reached"
+
+exit

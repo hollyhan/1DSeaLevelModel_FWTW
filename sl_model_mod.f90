@@ -19,7 +19,8 @@ module sl_model_mod
 	implicit none
     private
 	
-	public :: sl_solver
+	public :: sl_solver ! public module
+	public :: numstr, numstr2, iterstr ! public variables
 	
 
     !===============================  Variables for ice sheet - sea level model coupling ===================================|
@@ -372,24 +373,8 @@ module sl_model_mod
 		!-----------------------------------------------------------
 		if (coupling) then 
 		    write(*,*) 'Sea level model is coupled to the ice sheet model, reading in NH_iceload'
-	
-			if (ftype == 'text') then
-				call read_txt(nh_iceload, 'NH_iceload', folder_coupled)
-			elseif (ftype == 'binary') then 
-		        call read_nf90(folder_coupled//'NH_iceload'//ext, 'hice', nh_iceload)
-			endif
-	
+			call read_sl(nh_iceload, 'NH_iceload', folder_coupled)
 		endif
-
-		! Read in lat-lon grid files
-		open(unit = 1, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
-		read(1,*) latgrid
-		close(1)
-
-		open(unit = 1, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
-		read(1,*) longrid
-		close(1)
-
 
 		!========================================================================================================================
 		!       Initialize the model at times(1) when there has been no melting episodes yet  NMELT = 0 
@@ -412,32 +397,20 @@ module sl_model_mod
 	
 		    !====================== topography and ice load========================
 		    ! read in the initial iceload from the coupled ice input folder
-			if (ftype == 'text') then
-				call read_txt(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
-			elseif (ftype == 'binary') then 
-			    call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,1))
-			endif
-	    
+			call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
+			
+		
 		    !  Initialize topography (STEP 1)
 		    if (initial_topo) then   
 		
 				write(*,*) 'Reading in initial topo file'
-		
-				if (ftype == 'text') then
-					call read_txt(tinit_0, topo_initial, inputfolder)
-				elseif (ftype == 'binary') then 
-			        call read_nf90(inputfolder//topo_initial//ext, 'topography', tinit_0)
-				endif
+				call read_sl(tinit_0, topo_initial, inputfolder)
 
 		    else  ! if initial topo is unknown
     
 		       ! Present-day observed topography
 			    write(*,*) 'Reading in ETOPO2 file'
-				if (ftype == 'text') then
-					call read_txt(truetopo, topomodel, inputfolder)
-				elseif (ftype == 'binary') then 
-			        call read_nf90(inputfolder//topomodel//ext, 'topography',truetopo)
-				endif
+				call read_sl(truetopo, topomodel, inputfolder)
       
 		       ! if topography is not iteratively getting improved, or if at the first loop of outer-iteration
 		       if (itersl == 1) then 
@@ -451,19 +424,10 @@ module sl_model_mod
 		           write(iterstr,'(I2)') itersl-1
 		           iterstr = trim(adjustl(iterstr))
 		
-		   		   if (ftype == 'text') then
-			           call read_txt(pred_pres_topo, 'pred_pres_topo_', outputfolder, suffix=iterstr)	   
-		   		   elseif (ftype == 'binary') then 
-		   	           call read_nf90(outputfolder//'pred_pres_topo_'//trim(iterstr)//ext, 'topography', pred_pres_topo)
-		   	   	   endif
+				   call read_sl(pred_pres_topo, 'pred_pres_topo_', outputfolder, suffix=iterstr)	
        
-  
 		           ! read in tinit_0 from the previous outer-iteration 'itersl-1'
-		   	  	   if (ftype == 'text') then
-					   call read_txt(tinit_0_last, 'tgrid0_', outputfolder, suffix=iterstr)	
-		   		   elseif (ftype == 'binary') then 
-		    	       call read_nf90(outputfolder//'tgrid0_'//trim(iterstr)//ext, 'topography', tinit_0_last)
-		    	   endif
+				   call read_sl(tinit_0_last, 'tgrid0_', outputfolder, suffix=iterstr)
 
 		           ! compute topography correction for the initial topography 
 		           init_topo_corr(:,:) = truetopo(:,:) - pred_pres_topo(:,:)
@@ -476,11 +440,7 @@ module sl_model_mod
 			   write(*,*) 'Merge initial topography with NH_bedrock and initial ice load with NH_iceload'
     
 		       ! Bedrock from the ice sheet model
-		  	   if (ftype == 'text') then
-				   call read_txt(nh_bedrock, 'NH_bedrock', folder_coupled)	
-			   elseif (ftype == 'binary') then 
-			       call read_nf90(folder_coupled//'NH_bedrock'//ext, 'topography', nh_bedrock)
-			   endif
+			   call read_sl(nh_bedrock, 'NH_bedrock', folder_coupled)	
 
        
 		       ! merge intitial topography with bedrock provided by the ice sheet model.
@@ -514,43 +474,28 @@ module sl_model_mod
 		       endif
     
 		       !write out the current ice load as a new file to the sea-level model ice folder
-			   if (ftype == 'text') then
-				   call write_newtxt(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
-			   elseif (ftype == 'binary') then 	
-		           call write_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', NF90_CLOBBER, icexy(:,:,nfiles), &
-				   & longrid, latgrid)
-			   endif
+			   call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
 		   
 		    endif ! end if (coupling)
    
 		    !write out the initial topo of the simulation, tinit_0  
-			if (ftype == 'text') then
-				call write_newtxt(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
-			elseif (ftype == 'binary') then 
-		        call write_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', NF90_CLOBBER, tinit_0, longrid, latgrid)
-			endif
-	
+			call write_sl(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
 	
 		    !========================== ocean function =========================
 		    ! Calculate an initial ocean function based on the present topography as a first guess
-		     do j = 1,2*nglv
-		        do i = 1,nglv
-		           if (tinit_0(i,j)<0) then
-		              cxy0(i,j) = 1
-		           else
-		              cxy0(i,j) = 0
-		           endif
-		        enddo
-		     enddo
+		    do j = 1,2*nglv
+		       do i = 1,nglv
+		          if (tinit_0(i,j)<0) then
+		             cxy0(i,j) = 1
+		          else
+		             cxy0(i,j) = 0
+		          endif
+		       enddo
+		    enddo
     
-		     !  write out the initial ocean function as a file
-			 if (ftype == 'text') then
-				 call write_newtxt(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
-		     elseif (ftype == 'binary') then 
-			     call write_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', NF90_CLOBBER, cxy0, longrid, latgrid)
-		     endif
+		    !  write out the initial ocean function as a file
+			call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
 	 	  
-		    
 		    !========================== beta function =========================     
 		    ! calculate initial beta
 		    do j = 1,2*nglv
@@ -564,13 +509,8 @@ module sl_model_mod
 		    enddo
     
 		    !  write out the initial beta function as a file
-		    if (ftype == 'text') then
-				call write_newtxt(beta0(:,:), 'beta', outputfolder, suffix=numstr)
-		    elseif (ftype == 'binary') then 
-		        call write_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', NF90_CLOBBER, beta0, longrid, latgrid)
-		    endif
+			call write_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
     
-   
 		    !================== total ocean loading change =====================
 		    ! initialize the total ocean loading change and output as a file
 		    deltaS(:,:,1) = (0.0,0.0) 
@@ -580,7 +520,6 @@ module sl_model_mod
 		    write(1,'(ES16.9E2)') deltaS(:,:,1)
 		    close(1)
 	
-
 		    !========================== computing time =========================
 		    ! To write out how much time it took to compute sea-level change over one step
 		    ! Open a new file
@@ -592,7 +531,6 @@ module sl_model_mod
 		    & status = 'replace')
 		    close(1)
 	
-    
 		    !========================== time array =============================
 		    if (.not. input_times) then !if time array is not read in from a text file, make a new one       
 		        ! write a new file
@@ -600,14 +538,12 @@ module sl_model_mod
 		        & status = 'replace')
 		        write(1,'(ES14.4E2)') starttime
 		        close(1)
-		
 		    endif
 	
     
 		    !=========================== TPW ====================================
 		    ! initialize the rotational components
 		    if (tpw) then
-    
 		       !dil(:,:,1) = 0.0
 		       !dm(:,1) = 0.0
 		       !dlambda(:,:,1) = (0.0,0.0)
@@ -690,11 +626,7 @@ module sl_model_mod
 		          numstr = trim(adjustl(numstr))
     
 			      ! read in ice files (upto the previous time step) from the sea-level model folder
-			      if (ftype == 'text') then
-					  call read_txt(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
-			      elseif (ftype == 'binary') then 
-			          call read_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', icexy(:,:,n))
-			      endif
+				  call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
 
 		       enddo
        
@@ -702,58 +634,39 @@ module sl_model_mod
 		       write(*,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
 		       write(numstr,'(I6)') j
 		       numstr = trim(adjustl(numstr))
-       
-		!        k = -1*starttime-j*dt1
-		!        write(*,'(A,I8)') 'ice load, year (ago):',k
-		!        write(numstr2,'(I6)') k
-		!        numstr2 = trim(adjustl(numstr2))        
-     
+
 		       ! for iceload at the current time step, read the corresponding file from 'inputfolder_ice'
-		       if (ftype == 'text') then
-				   call read_txt(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
-		   	   elseif (ftype == 'binary') then       
-		       	   call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,nfiles))
-		   	   endif
+			   call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
 	    
 		       if (patch_ice) then 
-		         ! add zeros to the grids that are not defined in the ice sheet model.
-		          do j = 1,2*nglv
-		             do i = 1,nglv
-		                if (nh_iceload(i,j) == 9999) then 
-		                   icexy(i,j,nfiles) = 0.0
-		                endif
-		             enddo
-		          enddo 
-		       else
-		         ! merge the iceload with that from the ice sheet model.
-		          do j = 1,2*nglv
-		             do i = 1,nglv
-		                if (nh_iceload(i,j) < 9999) then 
-		                   icexy(i,j,nfiles) = nh_iceload(i,j)
-		                endif
-		             enddo
-		          enddo 
-		       endif
+		          ! add zeros to the grids that are not defined in the ice sheet model.
+		           do j = 1,2*nglv
+		              do i = 1,nglv
+		                 if (nh_iceload(i,j) == 9999) then 
+		                    icexy(i,j,nfiles) = 0.0
+		                 endif
+		              enddo
+		           enddo 
+		        else
+		          ! merge the iceload with that from the ice sheet model.
+		           do j = 1,2*nglv
+		              do i = 1,nglv
+		                 if (nh_iceload(i,j) < 9999) then 
+		                    icexy(i,j,nfiles) = nh_iceload(i,j)
+		                 endif
+		              enddo
+		           enddo 
+		        endif
        
 		    else ! if not coupling
 	    
 		        ! if sea level model is not coupled to an ice sheet model, read in iceloads from the folder inputfolder_ice
 		        do n = 1, nfiles
 		           j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array 
-		!          write(*,'(A,I6)') 'iceload file number:', j
 		           write(numstr,'(I6)') j
 		           numstr = trim(adjustl(numstr))
-		!          k = -1*starttime-j*dt1
-		!          write(*,'(A,I6)') 'ice load, year (ago):',k
-		!          write(numstr2,'(I6)') k
-		!          numstr2 = trim(adjustl(numstr2))
 		           ! read in ice files (upto the previous time step) from the sea-level model folder
-		   
-			       if (ftype == 'text') then
-					   call read_txt(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
-			   	   elseif (ftype == 'binary') then 
-			       	   call read_nf90(inputfolder_ice//icemodel//trim(numstr)//ext, 'hice', icexy(:,:,n))
-			   	   endif
+				   call read_sl(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
 		        enddo  
     
 		    endif !endif coupling
@@ -771,9 +684,7 @@ module sl_model_mod
 		       ! calculate times that corresponds to ice files that are read in 
 		       do i = 1, nfiles
 		          times(i) = starttime + TIMEWINDOW(i)*dt1
-		       !    times(i) = TIMEWINDOW(i)*100+starttime
 		       enddo
-		      ! write(*,*) 'times', times
        
 		       open(unit = 1, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
 		       & status = 'old', position='append')
@@ -783,11 +694,7 @@ module sl_model_mod
     
 		    !Read in the initial topography (topo at the beginning of the full simulation)
 		    !This is used to output the total sea level change from the beginning of the simulation
-			if (ftype == 'text') then
-				call read_txt(tinit_0, 'tgrid0', outputfolder)
-			elseif (ftype == 'binary') then 
-		        call read_nf90(outputfolder//'tgrid0'//ext, 'topography', tinit_0)
-			endif 
+			call read_sl(tinit_0, 'tgrid0', outputfolder)
   
 		    j = TIMEWINDOW(1) ! first element of the time window as the initial file
 		    write(*,'(A,I4)') 'file number of the first item in the TW:', j
@@ -795,22 +702,14 @@ module sl_model_mod
 		    numstr = trim(adjustl(numstr))
     
 			! read in initial (first file within the time window) ocean function
-		    if (ftype == 'text') then
-				call read_txt(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
-		    elseif (ftype == 'binary') then 
-		        call read_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', cxy0)
-		    endif
+			call read_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
     
 		    if (nmelt == 1) then 
 		       cxy(:,:) = cxy0(:,:)
 		    endif
 	
 			! read in initial (first file within the time window) beta  
-		    if (ftype == 'text') then
-				call read_txt(beta0(:,:), 'beta', outputfolder, suffix=numstr)
-		    elseif (ftype == 'binary') then 
-		        call read_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', beta0)
-		    endif
+			call read_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
 		    if (tpw) then
 		        ! read in variables for the rotation signal 
@@ -865,11 +764,7 @@ module sl_model_mod
 		    numstr2 = trim(adjustl(numstr2))
     
 			! read in topography of the previous timestep
-			if (ftype == 'text') then
-				call read_txt(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
-			elseif (ftype == 'binary') then 
-			    call read_nf90(outputfolder//'tgrid'//trim(numstr2)//ext, 'topography', topoxy_m1)
-			endif
+			call read_sl(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
  
 		    ! condition for time window travel
 		    if (Travel.EQ.0) then 
@@ -881,12 +776,7 @@ module sl_model_mod
 		        write(numstr,'(I4)') j
 		        numstr = trim(adjustl(numstr))
     
-				if (ftype == 'text') then
-					call read_txt(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
-				elseif (ftype == 'binary') then 	
-				    call read_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', tinit)
-				endif
-
+				call read_sl(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
 		    endif
 		endif ! endif nmelt>0
 
@@ -898,11 +788,7 @@ module sl_model_mod
 		   numstr = trim(adjustl(numstr))
    
 		   ! read in converged ocean function from the last timestep 
-		   if (ftype == 'text') then
-			   call read_txt(cxy(:,:), 'ocean', outputfolder, suffix=numstr)
-		   elseif (ftype == 'binary') then 
-		       call read_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', cxy)
-		   endif
+		   call read_sl(cxy(:,:), 'ocean', outputfolder, suffix=numstr)
    
 		   ! if there has been more than one melting episode
 		   ! read in the total ocean loading computed from previous timesteps 0 to nmelt minus 1.
@@ -1027,7 +913,6 @@ module sl_model_mod
 		   dicestar(:,:,n) = dicestarlm(:,:)         ! Save into big matrix (each slice for each time step)
 		   deltaicestar(:,:,n) = deltaicestarlm(:,:) ! Save into big matrix (each slice for each time step)
 		enddo
-
 
 		!========================================================================================
 		!                            BEGIN OCEAN PART 
@@ -1306,15 +1191,10 @@ module sl_model_mod
 		if (tpw) then
 		   open(unit = 1, file = outputFolder//'TPW', form = 'formatted', access = 'sequential', &
 		   & status = 'old', position='append')
-		!        write(1,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,nfiles), dm(:,nfiles), dlambda(:,:,nfiles)
 		   write(1,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
 		   close(1)
 		endif
- 
-		!      write(*,*) 'dil', dil(:,:,nfiles)
-		!      write(*,*) 'dm', dm(:,nfiles)
-		!      write(*,*) 'dlambda', dlambda(:,:,nfiles)
- 
+
 		if (calcRG) then ! For R calculations
 		   if (nmelt == 0) then
 		      rrlm(:,:) = (0.0,0.0)! No change on first timestep
@@ -1366,13 +1246,7 @@ module sl_model_mod
 		   write(*,*) 'FILENUMBER of new outputs : ',j
 		   write(numstr,'(I4)') j
 		   numstr = trim(adjustl(numstr))
-  
-		   !Total sea level change from the beginning of the simulation
-		!   open(unit = 1, file = outputfolder//'SL'//trim(numstr)//ext, form = 'formatted', access = 'sequential', &
-		!   & status = 'replace')
-		!   write(1,'(ES16.9E2)') tinit_0(:,:)-topoxy(:,:)
-		!   close(1)
-
+ 
 		   ! nmelt
 		   open(unit = 1, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
 		   & status = 'old',position='append')
@@ -1380,25 +1254,13 @@ module sl_model_mod
 		   close(1)
 
 		   ! topography at the current timestep
-		   if (ftype == 'text') then
-			   call write_newtxt(topoxy, 'tgrid', outputfolder, suffix=numstr)
-		   elseif (ftype == 'binary') then 
-		       call write_nf90(outputfolder//'tgrid'//trim(numstr)//ext, 'topography', NF90_CLOBBER, topoxy, longrid, latgrid)
-		   endif
+		   call write_sl(topoxy, 'tgrid', outputfolder, suffix=numstr)
    
-		   ! converged ocean function at the current timestep
-		   if (ftype == 'text') then
-			   call write_newtxt(cxy, 'ocean', outputfolder, suffix=numstr)
-		   elseif (ftype == 'binary') then 
-		       call write_nf90(outputfolder//'ocean'//trim(numstr)//ext, 'oceanFunction', NF90_CLOBBER, cxy, longrid, latgrid)
-		   endif   
+		   ! converged ocean function at the current timestep  
+		   call write_sl(cxy, 'ocean', outputfolder, suffix=numstr)
    
-		   ! converged beta function at the current timestpe
-		   if (ftype == 'text') then   
-			   call write_newtxt(beta, 'beta', outputfolder, suffix=numstr)
-		   elseif (ftype == 'binary') then 
-		       call write_nf90(outputfolder//'beta'//trim(numstr)//ext, 'betaFunction', NF90_CLOBBER, beta, longrid, latgrid)
-		   endif    
+		   ! converged beta function at the current timestpe  
+		   call write_sl(beta, 'beta', outputfolder, suffix=numstr)
 	   
 		   ! output converged total ocean loading changes 
 		   open(unit = 1, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
@@ -1421,69 +1283,28 @@ module sl_model_mod
 		      write(*,*) 'Last time step of the simulation! writing out files for next outer-iteration loop'
 
 		      ! write out the predicted present day topography into a file so it can be used in the next outer-iteration
-		      if (ftype == 'text') then
-				  call write_newtxt(topoxy, 'pred_pres_topo_', outputfolder, suffix=iterstr)
-		      elseif (ftype == 'binary') then 
-		          call write_nf90(outputfolder//'pred_pres_topo_'//trim(iterstr)//ext, 'topography', NF90_CLOBBER, &
-				  & topoxy, longrid, latgrid)
-		      endif
+			  call write_sl(topoxy, 'pred_pres_topo_', outputfolder, suffix=iterstr)
 
 		      ! write out the initial topography of the simulation at the currect outer-loop into a file
-		      if (ftype == 'text') then
-				  call write_newtxt(tinit_0, 'tgrid0_', outputfolder, suffix=iterstr)
-		      elseif (ftype == 'binary') then 
-		          call write_nf90(outputfolder//'tgrid0_'//trim(iterstr)//ext, 'topography', NF90_CLOBBER, tinit_0, longrid, latgrid)
-		      endif
+			  call write_sl(tinit_0, 'tgrid0_', outputfolder, suffix=iterstr)
 		   endif 
    
 		   if (calcRG) then
-		      if (ftype == 'text') then
-				  call write_newtxt(rr(:,:,n), 'R', outputfolder, suffix=numstr)
-		      elseif (ftype == 'binary') then 
-		          call write_nf90(outputfolder//'R'//trim(numstr)//ext, 'solidEarth displacement', NF90_CLOBBER, rr(:,:,n), & 
-				  & longrid, latgrid)
-		      endif
+			  call write_sl(rr(:,:,n), 'R', outputfolder, suffix=numstr)
       
-		      ! Compute geoid displacement
+		      ! Compute geoid displacement and write out
 		      gg(:,:,n) = deltaslxy(:,:)+rr(:,:,n)
     
-		      if (ftype == 'text') then
-				   call write_newtxt(gg(:,:,n), 'G', outputfolder, suffix=numstr)
-		      elseif (ftype == 'binary') then 
-		          call write_nf90(outputfolder//'G'//trim(numstr)//ext, 'geoid displacement', NF90_CLOBBER, gg(:,:,n), & 
-		   	      & longrid, latgrid)
-		      endif
-
+			  call write_sl(gg(:,:,n), 'G', outputfolder, suffix=numstr)
 		   endif
-
-		   !   open(unit = 1, file = outputfolder//'Tice'//numstr, form = 'formatted', access = 'sequential', &
-		   !   & status = 'replace')
-		   !   write(1,'(ES14.4E2)') T(:,:,n) + icexy(:,:,n)
-		   !   close(1)
-
-		   !   open(unit = 1, file = outputfolder//'Tbr'//numstr, form = 'formatted', access = 'sequential', &
-		   !   & status = 'replace')
-		   !   write(1,'(ES14.4E2)') T(:,:,n)
-		   !   close(1)
    
 		   if (coupling) then 
 		      ! topography change between the previous and the current timestep 
 		      ! this is the information passed to the ice sheet model
-		      if (ftype == 'text') then
-				  call write_newtxt(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled)
-		      elseif (ftype == 'binary') then 
-		          call write_nf90(folder_coupled//'bedrock'//ext, 'geoid_displacement', NF90_CLOBBER, &
-				  & topoxy_m1(:,:)-topoxy(:,:),longrid, latgrid)
-		      endif
+			  call write_sl(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled)
     
 		      !write out the current ice load as a new file
-		      if (ftype == 'text') then
-				  call write_newtxt(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
-		      elseif (ftype == 'binary') then       
-		          call write_nf90(outputfolder_ice//icemodel_out//trim(numstr)//ext, 'hice', NF90_CLOBBER, &
-				  & icexy(:,:,nfiles),longrid, latgrid)
-		      endif
-
+			  call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
 		   endif !endif coupling
 
 		endif !endif nmelt>0
