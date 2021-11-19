@@ -2,7 +2,7 @@
 module constants_mod
 !______________________________________________________________________________________________________________________!
    real, parameter :: pi = 3.1415926535898      ! Pi
-   complex, parameter :: ii=(0.0,1.0)           ! Square root of -1
+   complex, parameter :: ii = (0.0,1.0)           ! Square root of -1
    real, parameter :: gravConst = 6.67408E-11   ! Gravitational constant (m^3/kg/s^2)
 end module constants_mod
 
@@ -32,8 +32,8 @@ module planets_mod
       rhow = 1000.0                 ! Density of fresh water (kg/m^3)
       gacc = 9.80665                ! Acceleration due to gravity at the Earth's surface (m/s^2)
       omega = 7.292e-5              ! Rotation rate of the Earth (rad/s)
-      moiA=0.3296145*mass*radius**2 ! Principal moment of inertia of the Earth
-      moiC=0.3307007*mass*radius**2 ! Principal moment of inertia of the Earth
+      moiA = 0.3296145*mass*radius**2 ! Principal moment of inertia of the Earth
+      moiC = 0.3307007*mass*radius**2 ! Principal moment of inertia of the Earth
       kf = 0.9342+0.008             ! Fluid (Tidal) Love number
       
    end subroutine earth_init
@@ -47,8 +47,8 @@ module planets_mod
       rhow = 1000.0                 ! Density of fresh water (kg/m^3)
       gacc = 3.713                  ! Acceleration due to gravity at Mars's surface (m/s^2)
       omega = 7.08819118E-5         ! Rotation rate of Mars (rad/s)
-      moiA=0.363914*mass*radius**2  ! Principal moments of inertia of Mars
-      moiC=0.365905*mass*radius**2  ! Principal moments of inertia of Mars
+      moiA = 0.363914*mass*radius**2  ! Principal moments of inertia of Mars
+      moiC = 0.365905*mass*radius**2  ! Principal moments of inertia of Mars
       !----------------------------------------------------------------------------------!
       ! Lithospheric thickness and corresponding kf (based on Zharkov and Gudkova, 2005)
       !    15    |    48    |    58    |    84    |    110   |    164    |    200    [km]
@@ -84,36 +84,7 @@ module io_mod
    subroutine read_sl(data_slm, filename, filepath, suffix, fext)
 	   character (len = *), intent (in) :: filename, filepath
 	   real, dimension(nglv,2*nglv), intent(inout) :: data_slm 
-	 !  integer, intent(in), optional :: indx_time, indx_topoloop
 	   character (len = *), optional :: suffix, fext
-	 !  character(8) :: suffix
-	 
-
-	   ! indentify attributes
-	!   select case(filename)
-	!      case ("tgrid")
-!!		     filepath = outputfolder
-!	      case ("beta")
-!		     filepath = outputfolder
-!	      case ("ocean")
-!		     filepath = outputfolder 
- !      end select
-
-	   
-	 !  suffix = ''
-	   
-
-	!   if (present (indx_time)) then
-	!	   write(numstr,'(I4)') indx_time
-	!	   numstr = trim(adjustl(numstr))
-	!	   suffix == suffix//numstr
-	 !  endif
-	   
-	 !  if (present (indx_topoloop)) then 
-	!	   write(numstr,'(I4)') indx_topoloop
-	!	   numstr = trim(adjustl(numstr))
-	!	   suffix == suffix//'_'//numstr
-	!   endif
 	   
 	   if (fType == 'text') then
 		   call read_txt(data_slm, filename, filepath, suffix, fext)
@@ -127,16 +98,6 @@ module io_mod
 	   character (len = *), intent (in) :: filename, filepath
 	   real, dimension(nglv,2*nglv), intent(in) :: data_slm 
 	   character (len = *), optional :: suffix, fext
-	   
-	   ! indentify attributes
-	  ! select case(filename)
-	   !   case ("tgrid")
-		!     filepath = outputfolder
-	     ! case ("beta")
-		 !    filepath = outputfolder
-	     ! case ("ocean")
-		 !    filepath = outputfolder 
-       !end select
 
 	   if (fType == 'text') then
 		   call write_txt(data_slm, filename, filepath, suffix, fext)
@@ -145,7 +106,6 @@ module io_mod
 	   endif
 	   
    end subroutine write_sl
-    
    
    subroutine write_nf90(data_slm, filename, filepath, suffix, fext)
 
@@ -243,24 +203,7 @@ module io_mod
 	   data_slm = reshape(data_temp,[nglv,2*nglv])
 	   
    end subroutine read_nf90
-   
-
-  ! subroutine read_nf90(data_slm, filename, varname_nc, data_slm)!
-	     
-!	   character (len = *), intent(in) :: filename, varname_nc !file name and variable name in nc file !
-!	   real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
-!	   real, dimension(nglv,2*nglv), intent(out) :: data_slm
-!	   integer :: ncid, varid 
-	   
-!	   call check( nf90_open(filename, nf90_nowrite, ncid) ) !open the file
-!	   call check( nf90_inq_varid(ncid, varname_nc, varid) ) !get varid of the data variable
-!	   call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
-!	   call check( nf90_close(ncid) ) ! close the file
-!	   data_slm = reshape(data_temp,[nglv,2*nglv])
-	   
- !  end subroutine read_nf90
-  
-   
+      
    subroutine check_ncFile(ncvar, slmvar, varname) 
 	   
 	   real, dimension(nglv,2*nglv), intent(in) :: ncvar, slmvar 
@@ -323,4 +266,3 @@ module io_mod
    end subroutine read_txt
    
 end module io_mod
-
