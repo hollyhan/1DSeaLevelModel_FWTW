@@ -21,9 +21,6 @@ read (carg(4),*) starttime_sh ! start time of the simulation (in years)
 ! check point for time array and coupling
 call sl_solver_checkpoint(itersl_sh, dtime_sh)
 
-! set up the planet profile
-call set_planet
-
 ! set up the temporal resolution 
 call sl_timewindow(iter_sh)
 

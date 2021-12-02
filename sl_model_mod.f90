@@ -353,6 +353,10 @@ module sl_model_mod
 			call read_sl(nh_iceload, 'NH_iceload', folder_coupled)
 		endif
 		
+		! set up the planet profile
+		call set_planet
+		
+		! initalize spherical harmonics
 		call spharmt_init(spheredat, 2*nglv, nglv, norder, radius) ! Initialize spheredat (for SH transform subroutines)
 		
 	end subroutine sl_solver_checkpoint
