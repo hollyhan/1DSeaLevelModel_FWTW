@@ -19,7 +19,7 @@ module sl_model_mod
 	implicit none
     private
 	
-	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver ! public module
+	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, deallocate_slarrays ! public module
 	public :: numstr, numstr2, iterstr ! public variables
 	
 
@@ -329,7 +329,20 @@ module sl_model_mod
 
 	end subroutine sl_timewindow
 	
-
+	subroutine deallocate_slarrays
+		
+		deallocate(mask, iceload, icefiles, TIMEWINDOW)
+		deallocate(times, lovebetatt, lovebetattrr)
+		deallocate(lovebetarr, lovebeta)
+		deallocate(icexy, sl)                     
+		deallocate(dS, deltaS)   
+		deallocate(dicestar, deltaicestar)               
+		deallocate(rr, gg)      
+		deallocate(dil, dlambda ,deltalambda)
+		deallocate(dm)  
+		
+	end subroutine deallocate_slarrays
+	
 	subroutine sl_solver_checkpoint(itersl, dtime)
 		integer :: itersl, dtime        
 	
@@ -588,7 +601,7 @@ module sl_model_mod
         close(1)
 
 		write(*,*) 'DONE INITIALIZATION. EXITING THE PROGRAM'
-		call exit
+		!call exit
 	end subroutine sl_solver_init
 	!endif !  DONE INITIALIZATION (NMELT=0)
 
