@@ -57,12 +57,11 @@ slmodel.exe: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 sl_model_driver.o: sl_model_mod.o
-sl_model_mod.o: spharmt.o user_specs_mod.o init_slm_mod.o 
+sl_model_mod.o: spharmt.o user_specs_mod.o init_slm_mod.o
 
 clean:
 	$(RM) *.o *.mod slmodel.exe
 
-.f90.o:
-	$(RM) $@ $*.mod
-	$(FC) $(FFLAGS) -c $*.f90 $(INCLUDES)
+%.o : %.f90
+	$(FC)  $(FFLAGS) -c  $< $(INCLUDES)
 
