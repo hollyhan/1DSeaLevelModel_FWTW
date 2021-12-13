@@ -18,6 +18,9 @@ read (carg(2),*) iter_sh      ! the coupling time step we are on (in years)
 read (carg(3),*) dtime_sh     ! coupling time (in years)
 read (carg(4),*) starttime_sh ! start time of the simulation (in years)
 
+! set up output unit number
+call sl_set_unit_num(6)
+
 ! check point for time array and coupling
 call sl_solver_checkpoint(itersl_sh, dtime_sh)
 

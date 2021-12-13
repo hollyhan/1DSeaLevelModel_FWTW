@@ -19,11 +19,11 @@ module sl_model_mod
 	implicit none
     private
 	
-	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, deallocate_slarrays ! public module
-	public :: numstr, numstr2, iterstr ! public variables
+	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, deallocate_slarrays, sl_set_unit_num ! public module
+	public :: iterstr ! public variables
 	
 
-    !===============================  Variables for ice sheet - sea level model coupling ===================================|
+   !===============================  Variables for ice sheet - sea level model coupling ===================================|
 	real, dimension(nglv,2*nglv) :: nh_bedrock        ! Northern Hemispheric bedrock provided by the ice sheet model        |
 	real, dimension(nglv,2*nglv) :: nh_iceload        ! Northern Hemispheric iceload provided by the ice sheet model        |
 	!=======================================================================================================================|
@@ -122,6 +122,7 @@ module sl_model_mod
 	integer :: counti, countf,countrate         ! Computation timing
 	real :: counti_cpu, countf_cpu
 	type(sphere) :: spheredat                                   ! SH transform data to be passed to subroutines
+	integer :: unit_num
 
 	! For Jerry's code to read in Love numbers
 	integer :: legord(norder),nmod(norder),nmodes(norder),ll,nm,np
@@ -147,6 +148,7 @@ module sl_model_mod
 
 	contains
 	
+	!======================================================================================================================!
 	subroutine set_planet
 		! Planetary values
 		if (whichplanet == 'earth' .or. whichplanet == 'Earth' .or. whichplanet == 'EARTH') then
@@ -154,14 +156,17 @@ module sl_model_mod
 		elseif (whichplanet == 'mars' .or. whichplanet == 'Mars' .or. whichplanet == 'MARS') then
 		   call mars_init
 		else
-		   write(*,*) 'The parameters for the planet you entered are not built in.' 
-		   write(*,*) 'Please check your spelling for the variable whichplanet in the user_specs_mod module.' 
-		   write(*,*) 'If you preferred, you could create a new subroutine for the new planet in the planets_mod module.'
-		   write(*,*) 'Terminating: program sl_model'
+		   write(unit_num,*) 'The parameters for the planet you entered are not built in.' 
+		   write(unit_num,*) 'Please check your spelling for the variable whichplanet in the user_specs_mod module.' 
+		   write(unit_num,*) 'If you preferred, you could create a new subroutine for the new planet in the planets_mod module.'
+		   write(unit_num,*) 'Terminating: program sl_model'
 		   stop
 		endif
 	end subroutine set_planet
+	!_______________________________________________________________________________________________________________________!
 	
+	
+	!=======================================================================================================================!
 	subroutine sl_timewindow(iter) !create a time window that points to which ice history to read in
 		integer :: iter
 		
@@ -179,9 +184,9 @@ module sl_model_mod
 		Ldt(4) = Ldt1
 
 		if (sum(Ldt) > L_sim) then
-		    write(*,*) 'Total length of simulation CANNOT be smaller than the total lengths of the internal time windows!!'
-		    write(*,*) 'Make sure the sum(LdT) < L_sim !!'
-		    write(*,*) 'Terminating: program sl_model'
+		    write(unit_num,*) 'Total length of simulation CANNOT be smaller than the total lengths of the internal time windows!!'
+		    write(unit_num,*) 'Make sure the sum(LdT) < L_sim !!'
+		    write(unit_num,*) 'Terminating: program sl_model'
 		    stop
 		endif
 		
@@ -201,13 +206,13 @@ module sl_model_mod
 		Travel_total = (L_sim - L_TW)/dt1 !total number of marching steps taken by the TW 
 
 		if (Travel_total == 0) then 
-		   write(*,*) 'The length of a total simulation and the length of timewindow are the same.'
-		   write(*,*)' TW will not march forward!'
+		   write(unit_num,*) 'The length of a total simulation and the length of timewindow are the same.'
+		   write(unit_num,*)' TW will not march forward.'
 		endif
 
-		write(*,*) 'total length of time window (L_TW)', L_TW
-		write(*,*) 'total number of melting episode within a Full TW (TW_nmelt)', TW_nmelt
-		write(*,*) 'total number of icefiles in a  FULL TW (TW_nfiles)', TW_nfiles 
+		write(unit_num,*) 'Total length of time window in years (L_TW)', L_TW
+		write(unit_num,*) 'Total number of melting episode within a Full TW (TW_nmelt)', TW_nmelt
+		write(unit_num,*) 'Total number of icefiles in a FULL TW (TW_nfiles)', TW_nfiles 
 
 		if (iter.LT.ncalls) then !while the time window is growing, the time window has not started travelling when
 		   Travel = 0 ! 
@@ -297,10 +302,10 @@ module sl_model_mod
 		   do i=1,nfiles
 		      TIMEWINDOW(i) = TIMEWINDOW(i) + Travel
 		   enddo
-		    write(*,*) 'Icefiles in the TW at current marching step:', TIMEWINDOW
-		   write(*,*) 'The TW will stop marching when TRAVEL == Travel_total:'
-		   write(*,*) ''
-		   write(*,'(A,I4,A)') '   ', Travel_total - Travel, ' more TW steps to march!'
+		   write(unit_num,*) 'Icefiles in the TW at current marching step:', TIMEWINDOW
+		   write(unit_num,*) 'The TW will stop marching when TRAVEL == Travel_total:'
+		   write(unit_num,*) ''
+		   write(unit_num,'(A,I4,A)') '   ', Travel_total - Travel, ' more TW steps to march!'
 		endif
 
 
@@ -321,14 +326,17 @@ module sl_model_mod
 		! TIMEWINDOW = -(TIMEWINDOW*100+starttime)
 		! CAUTION in modifying the ice file numbers
 
-		!write(6,*) 'Timewindow is growing, ice file numbers to read in :', TIMEWINDOW(1:nfiles)
-		write(6,*) 'number of melting episodes (nmelt):', nmelt
-		write(*,'(A,I4)') 'Total number of files in the current time window (nfiles) = ', nfiles
-		write(*,'(A,I4)') ' Number of marching steps the TW has taken =        ', Travel
-		write(*,*) ''
+		!write(unit_num,*) 'Timewindow is growing, ice file numbers to read in :', TIMEWINDOW(1:nfiles)
+		write(unit_num,*) 'number of melting episodes (nmelt):', nmelt
+		write(unit_num,'(A,I4)') 'Total number of files in the current time window (nfiles) = ', nfiles
+		write(unit_num,'(A,I4)') ' Number of marching steps the TW has taken =        ', Travel
+		write(unit_num,*) ''
 
 	end subroutine sl_timewindow
+	!_______________________________________________________________________________________________________________________!
 	
+	
+	!=======================================================================================================================!
 	subroutine deallocate_slarrays
 		
 		deallocate(mask, iceload, icefiles, TIMEWINDOW)
@@ -342,27 +350,38 @@ module sl_model_mod
 		deallocate(dm)  
 		
 	end subroutine deallocate_slarrays
+	!_______________________________________________________________________________________________________________________!
 	
+	
+	!=======================================================================================================================!
+	subroutine sl_set_unit_num(unit_num_in)
+	   integer :: unit_num_in
+		   unit_num = unit_num_in
+	end
+	!_______________________________________________________________________________________________________________________!
+	
+	
+	!=======================================================================================================================!
 	subroutine sl_solver_checkpoint(itersl, dtime)
-		integer :: itersl, dtime        
-	
+		integer :: itersl, dtime 
+		
 		if (dtime /= dt1) then 
-		   write(*,*) 'dtime and dt1 should be equal to each other.'
-		   write(*,*) 'Please check your set up for the variables'
-		   write(*,*) 'Terminating: program sl_model'
+		   write(unit_num,*) 'dtime and dt1 should be equal to each other.'
+		   write(unit_num,*) 'Please check your set up for the variables'
+		   write(unit_num,*) 'Terminating: program sl_model'
 		   stop
 		endif
 
 		if (itersl.lt.1) then 
-		    write(*,*) 'itersl must be equal to or greather than 1'
-		    write(*,*) 'itersl = 1: No topography correction'
-		    write(*,*) 'itersl > 1: topography correction'
-		    write(*,*) 'Terminating: program sl_model'
+		    write(unit_num,*) 'itersl must be equal to or greather than 1'
+		    write(unit_num,*) 'itersl = 1: No topography correction'
+		    write(unit_num,*) 'itersl > 1: topography correction'
+		    write(unit_num,*) 'Terminating: program sl_model'
 		    stop
 		endif
 		
 		if (coupling) then 
-		    write(*,*) 'Sea level model is coupled to the ice sheet model, reading in NH_iceload'
+		   write(unit_num,*) 'Sea level model is coupled to the ice sheet model, reading in NH_iceload'
 			call read_sl(nh_iceload, 'NH_iceload', folder_coupled)
 		endif
 		
@@ -373,53 +392,57 @@ module sl_model_mod
 		call spharmt_init(spheredat, 2*nglv, nglv, norder, radius) ! Initialize spheredat (for SH transform subroutines)
 		
 	end subroutine sl_solver_checkpoint
+	!_______________________________________________________________________________________________________________________!
 
 	
+	!=======================================================================================================================
 	subroutine sl_solver_init(itersl, starttime)
+
 		integer :: itersl        
 		real :: starttime 
 
-		!========================================================================================================================
+		!================================================================================================
 		!       Initialize the model at times(1) when there has been no melting episodes yet  NMELT = 0 
-		!========================================================================================================================
+		!================================================================================================
 
 !		if (nmelt==0) then
 
-		write(*,*) 'nmelt=0, INITIALIZING THE SEA LEVEL MODEL..'
+		write(unit_num,*) 'nmelt=0, INITIALIZING THE SEA LEVEL MODEL..'
+		flush(unit_num)
 
 		!initialize variables 
 		j = TIMEWINDOW(1) ! initial file number (i.e. 0)
-		write(*,'(A,I4)') 'initial file number:', j
+		write(unit_num,'(A,I4)') 'initial file number:', j
 		write(numstr,'(I4)') j
 		numstr = trim(adjustl(numstr))
 		!     k = -1*starttime
 		!     write(numstr2,'(I6)') k
-		!     write(*,'(A,I6)') 'initial icefile suffix:', k
+		!     write(unit_num,'(A,I6)') 'initial icefile suffix:', k
 		!     numstr2 = trim(adjustl(numstr2))
-        !====================== topography and ice load========================
-	    ! read in the initial iceload from the coupled ice input folder
+      !====================== topography and ice load========================
+	   ! read in the initial iceload from the coupled ice input folder
 		call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)	
-		
+		write(unit_num,*)'C'
+
 		!  Initialize topography (STEP 1)
 		if (initial_topo) then   
-		
-			write(*,*) 'Reading in initial topo file'
+			
+			write(unit_num,*) 'Reading in initial topo file'	
 			call read_sl(tinit_0, topo_initial, inputfolder)
-
 		else  ! if initial topo is unknown
     
 		   ! Present-day observed topography
-		    write(*,*) 'Reading in ETOPO2 file'
+		   write(unit_num,*) 'Reading in ETOPO2 file'
 			call read_sl(truetopo, topomodel, inputfolder)
       
 		    ! if topography is not iteratively getting improved, or if at the first loop of outer-iteration
 		    if (itersl == 1) then 
-	           write(*,*) 'Initial topo is unknown, set the modern-observed topo to be the initial topo'
+	           write(unit_num,*) 'Initial topo is unknown, set the modern-observed topo to be the initial topo'
 	           ! truetopo(:,:)=truetopo(:,:)-icexy(:,:,TW_nfiles) ! If using ice topography
 	           tinit_0(:,:) = truetopo(:,:)! (eq. 48) 
 	        else 
 	  
-	           write(*,*) 'Topographic correction is ON. Updating initial topography'
+	           write(unit_num,*) 'Topographic correction is ON. Updating initial topography'
 	           ! read in predicted present topo from the previous outer-iteration 'itersl-1'
 	           write(iterstr,'(I2)') itersl-1
 	           iterstr = trim(adjustl(iterstr))
@@ -436,7 +459,7 @@ module sl_model_mod
 	    endif
 
 	    if (coupling) then  !if coupling the ICE SHEET - SEA LEVEL MODELs
-           write(*,*) 'Merge initial topography with NH_bedrock and initial ice load with NH_iceload'
+           write(unit_num,*) 'Merge initial topography with NH_bedrock and initial ice load with NH_iceload'
     
 		   ! Bedrock from the ice sheet model
 		   call read_sl(nh_bedrock, 'NH_bedrock', folder_coupled)	
@@ -479,7 +502,6 @@ module sl_model_mod
    
 		!write out the initial topo of the simulation, tinit_0  
 		call write_sl(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
-	
 		!========================== ocean function =========================
 		! Calculate an initial ocean function based on the present topography as a first guess
 		do j = 1,2*nglv
@@ -493,8 +515,7 @@ module sl_model_mod
 	    enddo
     
 	    !  write out the initial ocean function as a file
-	   	call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
-	 	  
+	   call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
 		!========================== beta function =========================     
 		! calculate initial beta
 		do j = 1,2*nglv
@@ -509,34 +530,31 @@ module sl_model_mod
     
 		!  write out the initial beta function as a file
 		call write_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
-    
 		!================== total ocean loading change =====================
 		! initialize the total ocean loading change and output as a file
 		deltaS(:,:,1) = (0.0,0.0) 
-
-        open(unit = 1, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
-	    & status = 'replace')
-		write(1,'(ES16.9E2)') deltaS(:,:,1)
-		close(1)
-	
+      open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+	   & status = 'replace')
+		write(201,'(ES16.9E2)') deltaS(:,:,1)
+		close(201)
 		!========================== computing time =========================
 		! To write out how much time it took to compute sea-level change over one step
 		! Open a new file
-		open(unit = 1, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
+		open(unit = 201, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
 		& status = 'replace')
-		close(1)
+		close(201)
 
-		open(unit = 1, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
+		open(unit = 201, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
 		& status = 'replace')
-		close(1)
+		close(201)
 	
 		!========================== time array =============================
 		if (.not. input_times) then !if time array is not read in from a text file, make a new one       
 		    ! write a new file
-		    open(unit = 1, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+		    open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
 		    & status = 'replace')
-		    write(1,'(ES14.4E2)') starttime
-		    close(1)
+		    write(201,'(ES14.4E2)') starttime
+		    close(201)
 		endif
 	
 	    !=========================== TPW ====================================
@@ -551,11 +569,11 @@ module sl_model_mod
 	    lambda(:,:) = 0.0
        
 	    ! write the values (0.0) for the first timestep
-	    open(unit = 1, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+	    open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
 	    & status = 'replace')
-	    write(1,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
-	    ! write(1,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,1), dm(:,1), dlambda(:,:,1)
-	    close(1)
+	    write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
+	    ! write(unit_num,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,1), dm(:,1), dlambda(:,:,1)
+	    close(201)
 	    endif
 	
 	
@@ -584,29 +602,28 @@ module sl_model_mod
 
 		   ice_volume = icestarlm(0,0)*4*pi*radius**2
 
-		   open(unit = 1, file = outputfolder//'ice_volume', form = 'formatted', access ='sequential', &
+		   open(unit = 201, file = outputfolder//'ice_volume', form = 'formatted', access ='sequential', &
 		   & status = 'replace')
-		   write(1,'(ES14.4E2)') ice_volume
-		   close(1)
+		   write(201,'(ES14.4E2)') ice_volume
+		   close(201)
 		endif
    
 	    !HH: print out the number of iteration it takes for the inner convergence
-	    open(unit = 1, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
+	    open(unit = 201, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
 	    & status = 'replace')
-	    close(1) 
+	    close(201) 
 
 	    !HH: print out the nmelt
-	    open(unit = 1, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
+	    open(unit = 201, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
 	    & status = 'replace')
-        close(1)
+       close(201)
 
-		write(*,*) 'DONE INITIALIZATION. EXITING THE PROGRAM'
+		 write(201,*) 'DONE INITIALIZATION. EXITING THE PROGRAM'
 		!call exit
 	end subroutine sl_solver_init
 	!endif !  DONE INITIALIZATION (NMELT=0)
 
 
-	!========================================================================================================================  
 
 	!========================================================================================================================
 	subroutine sl_solver(itersl, iter, dtime, starttime)
@@ -625,11 +642,11 @@ module sl_model_mod
 		    ! Ice files
 		   do n = 1, nfiles-1
 		      j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array 
-		      write(*,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
+		      write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
 		      write(numstr,'(I6)') j
 
 		      k = -1 * starttime - j * dt1
-		      write(*,'(A,I7)') 'ice load, year (ago):',k
+		      write(unit_num,'(A,I7)') 'ice load, year (ago):',k
 		      numstr = trim(adjustl(numstr))
     
 			  ! read in ice files (upto the previous time step) from the sea-level model folder
@@ -638,7 +655,7 @@ module sl_model_mod
 		   enddo
        
 		   j = TIMEWINDOW(nfiles) ! icefile number to read in from the TW array 
-		   write(*,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
+		   write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
 		   write(numstr,'(I6)') j
 		   numstr = trim(adjustl(numstr))
 
@@ -680,22 +697,22 @@ module sl_model_mod
     
 		   !Time array
 		   if (input_times) then ! time array is inputted from an existing text file, read in and write out
-		      open(unit = 1, file = inputfolder//timearray, form = 'formatted', access = 'sequential', status = 'old')
-		      open(unit = 2, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+		      open(unit = 201, file = inputfolder//timearray, form = 'formatted', access = 'sequential', status = 'old')
+		      open(unit = 202, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
 		      & status = 'replace')
-		      read(1,*) times
-		      write(2,'(ES14.4E2)') times
-		      close(1)
-		      close(2)
+		      read(201,*) times
+		      write(202,'(ES14.4E2)') times
+		      close(201)
+		      close(202)
 		   else ! if time array is not read in from a text file, calculate the time array 
 		      ! calculate times that corresponds to ice files that are read in 
 		      do i = 1, nfiles
 		         times(i) = starttime + TIMEWINDOW(i)*dt1
 		      enddo
-    	      open(unit = 1, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+    	      open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
 		      & status = 'old', position='append')
-		      write(1,'(ES14.4E2)') times(nfiles)
-		      close(1)         
+		      write(201,'(ES14.4E2)') times(nfiles)
+		      close(201)         
 		   endif
     
 		   !Read in the initial topography (topo at the beginning of the full simulation)
@@ -703,7 +720,7 @@ module sl_model_mod
 		   call read_sl(tinit_0, 'tgrid0', outputfolder)
   
 		   j = TIMEWINDOW(1) ! first element of the time window as the initial file
-		   write(*,'(A,I4)') 'file number of the first item in the TW:', j
+		   write(unit_num,'(A,I4)') 'file number of the first item in the TW:', j
 		   write(numstr,'(I4)') j
 		   numstr = trim(adjustl(numstr))
     
@@ -719,7 +736,7 @@ module sl_model_mod
 
 		   if (tpw) then
 		      ! read in variables for the rotation signal 
-		      open(unit = 1, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+		      open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
 		      & status = 'old')
 
 		      oldlambda(:,:) = (0.0,0.0)
@@ -736,15 +753,15 @@ module sl_model_mod
             
 		         !skip lines to read in the rotational components corresponding to timesteps within the TW 
 		         do m = 1, j
-		            read(1,*) !skip line for il
-		            read(1,*) !skip reading in mm
-		            read(1,*) !skip reading in lambda
+		            read(201,*) !skip line for il
+		            read(201,*) !skip reading in mm
+		            read(201,*) !skip reading in lambda
 		         enddo
             
 		         !read in TPW components - total rotational change from the beginning of simulation 
-		         read(1,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
-		         read(1,'(3ES19.8E2)') (mm(i), i = 1, 3)
-		         read(1,'(18ES19.8E2)') ((lambda(i, j), i = 0, 2), j = 0, 2)
+		         read(201,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
+		         read(201,'(3ES19.8E2)') (mm(i), i = 1, 3)
+		         read(201,'(18ES19.8E2)') ((lambda(i, j), i = 0, 2), j = 0, 2)
     
 		         !rotational changes between each time step. 
 		         dm(:,n) = mm(:) - oldm(:)
@@ -760,7 +777,7 @@ module sl_model_mod
 		            deltalambda(:,:,nfiles-1) = lambda(:,:)
 		         endif          
 		      enddo
-		      close(1)
+		      close(201)
 		   endif !endif (TPW)
     
 		   ! find index of the previous timestep
@@ -788,7 +805,7 @@ module sl_model_mod
 		if (nmelt.GT.1) then
 
 		   j = TIMEWINDOW(nfiles-1)  
-		   write(*,*) 'Reading in ocean function from previous timestep (file number)', j
+		   write(unit_num,*) 'Reading in ocean function from previous timestep (file number)', j
 		   write(numstr,'(I4)') j
 		   numstr = trim(adjustl(numstr))
    
@@ -801,15 +818,15 @@ module sl_model_mod
 		   do n=1, nfiles-1
                  
 		      j = TIMEWINDOW(n)
-		      ! write(*,*) 'reading in converged ocean loading files'
-		      ! write(*,*) 'sea files, j', j
+		      ! write(unit_num,*) 'reading in converged ocean loading files'
+		      ! write(unit_num,*) 'sea files, j', j
 		      write(numstr,'(I4)') j
 		      numstr = trim(adjustl(numstr))
    
-		      open(unit = 1, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+		      open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
 		      & status = 'old')
-		      read(1,'(ES16.9E2)') dS_converged(:,:)
-		      close(1)
+		      read(201,'(ES16.9E2)') dS_converged(:,:)
+		      close(201)
       
 		      deltaS(:,:,n) = dS_converged(:,:)  !save the converged total-ocean loading into a big array
 		      ! dS(:,:,n) = deltaS(:,:,n)-deltaS(:,:,n-1)!calculate the ocean loading changes between every time step
@@ -819,33 +836,33 @@ module sl_model_mod
 		!-----------------------------------------------------------
 		!  Read in Love numbers (Jerry's output from 'maxwell.f')
 		!-----------------------------------------------------------
-		open(unit = 2, file = planetfolder//planetmodel, status = 'old')
+		open(unit = 201, file = planetfolder//planetmodel, status = 'old')
 		! Following code borrowed from Jerry
-		read(2,*) 
+		read(201,*) 
 		do j = 1,norder
-		   read(2,*) legord(j), nmodes(j)
+		   read(201,*) legord(j), nmodes(j)
 		   nm = nmodes(j)
 		   xn = real(legord(j))
 		   ll = legord(j)
 		   nmod(ll) = nm
-		   read(2,*) (s(i,ll), i=1, nm)
-		   read(2,*) elast(1,ll), elast(2,ll), taurr, taurt, elast(3,ll)
-		   read(2,*) asymv(1,ll), asymv(2,ll), taurr, taurt, asymv(3,ll)
-		   read(2,*) (resh(i,ll), i=1,nm)
-		   read(2,*) (resl(i,ll), i=1,nm)
-		   read(2,*) (resk(i,ll), i=1,nm)
+		   read(201,*) (s(i,ll), i=1, nm)
+		   read(201,*) elast(1,ll), elast(2,ll), taurr, taurt, elast(3,ll)
+		   read(201,*) asymv(1,ll), asymv(2,ll), taurr, taurt, asymv(3,ll)
+		   read(201,*) (resh(i,ll), i=1,nm)
+		   read(201,*) (resl(i,ll), i=1,nm)
+		   read(201,*) (resk(i,ll), i=1,nm)
 		   if (xn .lt. 1.5) cycle
-		   read(2,*) telast(1,ll), telast(2,ll), dmx, dmy, telast(3,ll)
-		   read(2,*) tasymv(1,ll), tasymv(2,ll), dmx, dmy, tasymv(3,ll)
-		   read(2,*) (tresh(i,ll), i=1, nm)
-		   read(2,*) (tresl(i,ll), i=1, nm)
-		   read(2,*) (tresk(i,ll), i=1, nm)
+		   read(201,*) telast(1,ll), telast(2,ll), dmx, dmy, telast(3,ll)
+		   read(201,*) tasymv(1,ll), tasymv(2,ll), dmx, dmy, tasymv(3,ll)
+		   read(201,*) (tresh(i,ll), i=1, nm)
+		   read(201,*) (tresl(i,ll), i=1, nm)
+		   read(201,*) (tresk(i,ll), i=1, nm)
 		enddo
 		! 1001  format(2i5)
 		! 1002  format(20a4)
 		! 1003  format(i10,1x,i5)
 		! 1020  format(5e16.8)
-		close(2)
+		close(201)
 
 		! Divide by l (numbers are multiplied by l in Jerry's output)
 		do l = 1,norder
@@ -871,9 +888,9 @@ module sl_model_mod
 		!                       CALCULATIONS                        
 		!___________________________________________________________
 
-		write(*,*) ''
-		write(*,'(A,I4,A,EN15.4E2,A)') '  Timestep',iter,', from ',times(nfiles-1),' years to '
-		write(*,'(A,EN15.4E2,A)') '                     ',times(nfiles),' years'
+		write(unit_num,*) ''
+		write(unit_num,'(A,I4,A,EN15.4E2,A)') '  Timestep',iter,', from ',times(nfiles-1),' years to '
+		write(unit_num,'(A,EN15.4E2,A)') '                     ',times(nfiles),' years'
 
 		! Decompose initial topography (STEP 2) (used to check convergence of outer loop)
 		call spat2spec(tinit(:,:), t0lm, spheredat)
@@ -1169,13 +1186,13 @@ module sl_model_mod
 		   if (xi <= epsilon1) then ! If converged
 		      exit
 		   elseif (ninner == 9999) then ! If no convergence after a huge number of iterations
-		      write(*,*)
-		      write(*,'(A,I5,A)') 'WARNING: The inner loop failed to converge after the limit of ', ninner, ' iterations.'
-		      write(*,'(A,ES15.3,A)') '         The variable xi finished with a value of ', xi, ', resulting from '
-		      write(*,'(A,ES15.3)') '         sum(abs(olddSlm)) = ', sum(abs(olddSlm))
-		      write(*,'(A,ES15.3)') '            sum(abs(dSlm)) = ', sum(abs(dSlm))
-		      write(*,*)
-		      write(*,'(A)') '!!!---- Program sl_model will now be terminated. ----!!!'
+		      write(unit_num,*)
+		      write(unit_num,'(A,I5,A)') 'WARNING: The inner loop failed to converge after the limit of ', ninner, ' iterations.'
+		      write(unit_num,'(A,ES15.3,A)') '         The variable xi finished with a value of ', xi, ', resulting from '
+		      write(unit_num,'(A,ES15.3)') '         sum(abs(olddSlm)) = ', sum(abs(olddSlm))
+		      write(unit_num,'(A,ES15.3)') '            sum(abs(dSlm)) = ', sum(abs(dSlm))
+		      write(unit_num,*)
+		      write(unit_num,'(A)') '!!!---- Program sl_model will now be terminated. ----!!!'
 		      call abort ! Terminate program
 		      !exit ! DEBUG line: Continue inner loop despite non-convergence. Normal operation: Enable the 2 lines above.
 		   endif
@@ -1185,20 +1202,20 @@ module sl_model_mod
 		!-----------------------------------------------------------
 		!<<<<<<<<<<<<<<<<<<<< End of inner loop >>>>>>>>>>>>>>>>>>>>
 		!-----------------------------------------------------------
-		write(*,'(A,I4,A)') '  ', ninner, ' inner-loop iterations'
+		write(unit_num,'(A,I4,A)') '  ', ninner, ' inner-loop iterations'
 
 		!HH: print out the number of iteration it takes for the inner convergence
-		open(unit = 1, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
+		open(unit = 201, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
 		& status = 'old',position='append')
-		write(1,'(I5)') ninner
-		close(1)
+		write(201,'(I5)') ninner
+		close(201)
 
 		! Write out the converged rotation-related quantities 
 		if (tpw) then
-		   open(unit = 1, file = outputFolder//'TPW', form = 'formatted', access = 'sequential', &
+		   open(unit = 201, file = outputFolder//'TPW', form = 'formatted', access = 'sequential', &
 		   & status = 'old', position='append')
-		   write(1,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
-		   close(1)
+		   write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
+		   close(201)
 		endif
 
 		if (calcRG) then ! For R calculations
@@ -1245,17 +1262,17 @@ module sl_model_mod
 		!                          OUTPUT                           
 		!_________________________________________________________________________________________
 
-		write(*,'(A)') 'Writing output files...'
+		write(unit_num,'(A)') 'Writing output files...'
 		j = TIMEWINDOW(nfiles)
-		write(*,*) 'FILENUMBER of new outputs : ',j
+		write(unit_num,*) 'FILENUMBER of new outputs : ',j
 		write(numstr,'(I4)') j
 		numstr = trim(adjustl(numstr))
  
 		! nmelt
-		open(unit = 1, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
+		open(unit = 201, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
 		& status = 'old',position='append')
-		write(1,'(I4)') nmelt
-		close(1)
+		write(201,'(I4)') nmelt
+		close(201)
 
 		! topography at the current timestep
 		call write_sl(topoxy, 'tgrid', outputfolder, suffix=numstr)
@@ -1267,24 +1284,24 @@ module sl_model_mod
 		call write_sl(beta, 'beta', outputfolder, suffix=numstr)
 	   
 		! output converged total ocean loading changes 
-		open(unit = 1, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+		open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
 		& status = 'replace')
-		write(1,'(ES14.7E2)') deltaS(:,:,nfiles)
-		close(1)
+		write(201,'(ES14.7E2)') deltaS(:,:,nfiles)
+		close(201)
    
 		if (iceVolume) then
 		   ice_volume = icestarlm(0,0)*4*pi*radius**2 !multiply the (0,0) component of ice to the area of a sphere
-		   open(unit = 1, file = outputfolder//'ice_volume', form = 'formatted', access = 'sequential', &
+		   open(unit = 201, file = outputfolder//'ice_volume', form = 'formatted', access = 'sequential', &
 		   & status = 'old', position = 'append')
-		   write(1,'(ES14.4E2)') ice_volume
-		   close(1)
+		   write(201,'(ES14.4E2)') ice_volume
+		   close(201)
 		endif
    
 		current_time = iter * dt1     !time passed since the start of the simulation  
 		if (current_time == L_sim) then !if we are at the last time step of simulation   
 		   write(iterstr,'(I2)') itersl
            iterstr = trim(adjustl(iterstr))
-		   write(*,*) 'Last time step of the simulation! writing out files for next outer-iteration loop'
+		   write(unit_num,*) 'Last time step of the simulation! writing out files for next outer-iteration loop'
 
 		   ! write out the predicted present day topography into a file so it can be used in the next outer-iteration
 		   call write_sl(topoxy, 'pred_pres_topo_', outputfolder, suffix=iterstr)
@@ -1315,26 +1332,28 @@ module sl_model_mod
 		call cpu_time(countf_cpu)
 
 		! Write out total compuatation time of sea level change over current timestep
-		open(unit = 1, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
+		open(unit = 201, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
 		& status = 'old', position='append')
-		write(1,'(ES14.4E2)') float(countf-counti)/float(countrate)
-		close(1)
+		write(201,'(ES14.4E2)') float(countf-counti)/float(countrate)
+		close(201)
 
-		open(unit = 1, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
+		open(unit = 201, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
 		& status = 'old', position='append')
-		write(1,'(ES14.4E2)') countf_cpu-counti_cpu
-		close(1)
+		write(201,'(ES14.4E2)') countf_cpu-counti_cpu
+		close(201)
 
 
-		write(*,'(A,F7.2,A)') 'Done! Total time ', real(countf - counti) / real(countrate), ' seconds'
-		write(*,*) ''
-		write(*,*) ''
+		write(unit_num,'(A,F7.2,A)') 'Done! Total time ', real(countf - counti) / real(countrate), ' seconds'
+		write(unit_num,*) ''
+		write(unit_num,*) ''
 
 		if (Travel_total > 0 .and. Travel == Travel_total) then
-			write(*,*) ' THE TIMEWINDOW HAS REACHED THE END OF THE SIMULATION!'
-			write(*,*) ' GREAT JOB TW!'
+			write(unit_num,*) ' THE TIMEWINDOW HAS REACHED THE END OF THE SIMULATION!'
+			write(unit_num,*) ' GREAT JOB TW!'
 		endif
-		write(*,*) ''
+		write(unit_num,*) ''
 	end subroutine sl_solver
-!---------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------------------------------------!
+
+
 end module sl_model_mod
