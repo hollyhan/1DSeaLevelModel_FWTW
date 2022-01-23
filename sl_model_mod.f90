@@ -400,12 +400,12 @@ module sl_model_mod
 
 	
 	!=======================================================================================================================
-	subroutine sl_solver_init(itersl, starttime, mali_iceload, mali_bedrock) !HH: add in an optional argument for bedrock and ice thickness for coupling to MALI 
+	subroutine sl_solver_init(itersl, starttime, mali_iceload, mali_bedrock, mali_mask) !HH: add in an optional argument for bedrock and ice thickness for coupling to MALI 
 
 !HH: declare the variable ism_bedrock (formerly nh_bedrock) here? maybe not..
 	   integer :: itersl        
 	   real :: starttime 
-		real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_bedrock  !HH: bedrock provided by ISM in coupled simulation: include intent(in) later when they are actually provided by MALI .        
+		real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_bedrock, mali_mask  !HH: bedrock provided by ISM in coupled simulation: include intent(in) later when they are actually provided by MALI .        
 				
 
 		!================================================================================================
@@ -465,55 +465,33 @@ module sl_model_mod
 
 	    if (coupling) then  !if coupling the ICE SHEET - SEA LEVEL MODELs
 			 
-		    !HH: change the variable name from nh_bedrock to 'ism_bedrock' and nh_iceload to 'ism_iceload'
 		    !HH: add a check that if 'mali_iceload' or 'mali_bedrock' are not provided, print out an error? 
 			 	 
-          write(unit_num,*) 'Merge initial topography with NH_bedrock and initial ice load with NH_iceload' !HH: change
+          write(unit_num,*) 'Merge initial topography and iceload with the ISM data' !HH: change
   
-			 ! Bedrock and iceload from the ice sheet model 
-		    !call read_sl(nh_bedrock, 'NH_bedrock', folder_coupled)
- 		  	 !call read_sl(nh_iceload, 'NH_iceload', folder_coupled) 
-        !HH: get rid of the two lines above, instead assign ism_bedrock to the value of optional argument (i.e., ism_bedrock =mali_bedrock, ism_iceload=mali_iceload)
-		    nh_bedrock(:,:) = mali_bedrock(:,:) !HH: change the name later 
-			 nh_iceload(:,:) = mali_iceload(:,:)  
-		 
 		    ! merge intitial topography with bedrock provided by the ice sheet model.
-		    do j = 1,2*nglv
-		       do i = 1,nglv
-		          if (nh_bedrock(i,j) < 9999) then
-		             tinit_0(i,j) = nh_bedrock(i,j)
-		          endif
-		       enddo
-		    enddo
+			 do j = 1,2*nglv
+				 do i = 1,nglv
+					 tinit_0(i,j) = mali_bedrock(i,j) + tinit_0(i,j)*(1 - mali_mask(i,j))
+				 enddo
+			 enddo
 
-		    ! for the initial ice load file
-		    if (patch_ice) then
-		       ! add zeros to the grids that are not defined in the ice sheet model.
-		       do j = 1,2*nglv
-		          do i = 1,nglv
-		             if (nh_iceload(i,j) >= 9999) then  !HH: change it to greater than 9999? 
-		                icexy(i,j,nfiles) = 0.0
-		             endif
-		          enddo
-		       enddo 
-		    else
-		       ! merge the iceload with that from the ice sheet model.
-		       do j = 1,2*nglv
-		          do i = 1,nglv
-		             if (nh_iceload(i,j) < 9999) then 
-		                icexy(i,j,nfiles) = nh_iceload(i,j)
-		             endif
-		          enddo
-		       enddo
-		    endif
-    
+		    ! merge intitial topography with bedrock provided by the ice sheet model.
+			 do j = 1,2*nglv
+				 do i = 1,nglv
+					 icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
+				 enddo
+			 enddo
+
 		    !write out the current ice load as a new file to the sea-level model ice folder
 		    call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
 		   
 		endif ! end if (coupling)
-   
+
 		!write out the initial topo of the simulation, tinit_0  
 		call write_sl(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
+
+
 		!========================== ocean function =========================
 		! Calculate an initial ocean function based on the present topography as a first guess
 		do j = 1,2*nglv
@@ -528,6 +506,8 @@ module sl_model_mod
     
 	   !  write out the initial ocean function as a file
 	   call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
+
+
 		!========================== beta function =========================     
 		! calculate initial beta
 		do j = 1,2*nglv
@@ -542,6 +522,8 @@ module sl_model_mod
     
 		!  write out the initial beta function as a file
 		call write_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
+
+
 		!================== total ocean loading change =====================
 		! initialize the total ocean loading change and output as a file
 		deltaS(:,:,1) = (0.0,0.0) 
@@ -549,6 +531,8 @@ module sl_model_mod
 	   & status = 'replace')
 		write(201,'(ES16.9E2)') deltaS(:,:,1)
 		close(201)
+
+
 		!========================== computing time =========================
 		! To write out how much time it took to compute sea-level change over one step
 		! Open a new file
@@ -559,7 +543,8 @@ module sl_model_mod
 		open(unit = 201, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
 		& status = 'replace')
 		close(201)
-	
+
+
 		!========================== time array =============================
 		if (.not. input_times) then !if time array is not read in from a text file, make a new one       
 		   ! write a new file
@@ -568,7 +553,8 @@ module sl_model_mod
 		   write(201,'(ES14.4E2)') starttime
 		   close(201)
 		endif
-	
+
+
 	   !=========================== TPW ====================================
 	   ! initialize the rotational components
 	   if (tpw) then
@@ -587,8 +573,8 @@ module sl_model_mod
 	   ! write(unit_num,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,1), dm(:,1), dlambda(:,:,1)
 	   close(201)
 	   endif
-	
-	
+
+
     	!=========================ice volume================================
 		if (iceVolume) then
 		   if (checkmarine) then
@@ -636,14 +622,13 @@ module sl_model_mod
 	!endif !  DONE INITIALIZATION (NMELT=0)
 
 
-
 	!========================================================================================================================
-	subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, slchange)
+	subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, mali_mask, slchange)
 		! Compute sea-level change associated with past ice loading changes
 		!if (nmelt.GT.0) then
 		real :: starttime                                       ! start time of the simulation 
 		integer :: iter, itersl, dtime    
-		real, dimension(nglv,2*nglv), optional :: mali_iceload !HH: optional for coupled ism-slm case
+		real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask !HH: optional for coupled ism-slm case
 		real, dimension(nglv,2*nglv), intent(out), optional :: slchange  
 
 		!===========================================================
@@ -652,12 +637,9 @@ module sl_model_mod
 		call cpu_time(counti_cpu)
 		call system_clock(count = counti, count_rate = countrate)  ! Total computation time
 		
-		if (coupling) then 
-			
-		 !HH: change the variable name from nh_bedrock to 'ism_bedrock' and nh_iceload to 'ism_iceload'
-		 !HH: assign ism_bedrock to the value of optional argument
-		   
-			! Ice files
+      if (coupling) then 
+ 
+      ! Ice files
 		   do n = 1, nfiles-1
 		      j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array 
 		      write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
@@ -680,33 +662,15 @@ module sl_model_mod
 		   ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
 		   call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
 
-			! ice thickness at the current time step inside the ISM domain provided by the ISM
-			!HH change the name nh_iceload => ism_load
-			!call read_sl(nh_iceload, 'NH_iceload', folder_coupled) 
-			nh_iceload(:,:) = mali_iceload(:,:)  
-		   !HH:  change this part to something like ism_iceload= mali_iceload 
-	    
-		   if (patch_ice) then 
-		      ! add zeros to the grids that are not defined in the ice sheet model.
-		      do j = 1,2*nglv
-		         do i = 1,nglv
-		            if (nh_iceload(i,j) == 9999) then!HH: change to greater?
-		               icexy(i,j,nfiles) = 0.0
-		            endif
-		         enddo
-		      enddo 
-		   else
-		      ! merge the iceload with that from the ice sheet model.
-		      do j = 1,2*nglv
-		         do i = 1,nglv
-		            if (nh_iceload(i,j) < 9999) then 
-		               icexy(i,j,nfiles) = nh_iceload(i,j)
-		            endif
-		         enddo
-		      enddo 
-		   endif
-
-	    else ! if not coupling
+			! ice thickness at the current time step inside the ISM domain is provided by the ISM
+	      ! merge iceload configuration
+		   do j = 1,2*nglv
+			   do i = 1,nglv
+				   icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
+			   enddo
+		   enddo
+		  
+      else ! if not coupling
 	       
 		   ! if sea level model is not coupled to an ice sheet model, read in iceloads from the folder inputfolder_ice
 		   do n = 1, nfiles
@@ -714,117 +678,117 @@ module sl_model_mod
 		      write(numstr,'(I6)') j
 		      numstr = trim(adjustl(numstr))
 		      ! read in ice files (upto the previous time step) from the sea-level model folder
-			  call read_sl(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
+			   call read_sl(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
 		   enddo  
                
-	    endif !endif coupling
+	   endif !endif coupling
+
+      !Time array
+		if (input_times) then ! time array is inputted from an existing text file, read in and write out
+		   open(unit = 201, file = inputfolder//timearray, form = 'formatted', access = 'sequential', status = 'old')
+		   open(unit = 202, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+		   & status = 'replace')
+		   read(201,*) times
+		   write(202,'(ES14.4E2)') times
+		   close(201)
+		   close(202)
+		else ! if time array is not read in from a text file, calculate the time array 
+		   ! calculate times that corresponds to ice files that are read in 
+		   do i = 1, nfiles
+		      times(i) = starttime + TIMEWINDOW(i)*dt1
+		   enddo
+    	   open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+		   & status = 'old', position='append')
+		   write(201,'(ES14.4E2)') times(nfiles)
+		   close(201)         
+		endif
     
-		   !Time array
-		   if (input_times) then ! time array is inputted from an existing text file, read in and write out
-		      open(unit = 201, file = inputfolder//timearray, form = 'formatted', access = 'sequential', status = 'old')
-		      open(unit = 202, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
-		      & status = 'replace')
-		      read(201,*) times
-		      write(202,'(ES14.4E2)') times
-		      close(201)
-		      close(202)
-		   else ! if time array is not read in from a text file, calculate the time array 
-		      ! calculate times that corresponds to ice files that are read in 
-		      do i = 1, nfiles
-		         times(i) = starttime + TIMEWINDOW(i)*dt1
-		      enddo
-    	      open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
-		      & status = 'old', position='append')
-		      write(201,'(ES14.4E2)') times(nfiles)
-		      close(201)         
-		   endif
+		!Read in the initial topography (topo at the beginning of the full simulation)
+		!This is used to output the total sea level change from the beginning of the simulation
+		call read_sl(tinit_0, 'tgrid0', outputfolder)
+
+		j = TIMEWINDOW(1) ! first element of the time window as the initial file
+		write(unit_num,'(A,I4)') 'file number of the first item in the TW:', j
+		write(numstr,'(I4)') j
+		numstr = trim(adjustl(numstr))
     
-		   !Read in the initial topography (topo at the beginning of the full simulation)
-		   !This is used to output the total sea level change from the beginning of the simulation
-		   call read_sl(tinit_0, 'tgrid0', outputfolder)
-  
-		   j = TIMEWINDOW(1) ! first element of the time window as the initial file
-		   write(unit_num,'(A,I4)') 'file number of the first item in the TW:', j
-		   write(numstr,'(I4)') j
-		   numstr = trim(adjustl(numstr))
+		! read in initial (first file within the time window) ocean function
+		call read_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
     
-		   ! read in initial (first file within the time window) ocean function
-		   call read_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
-    
-		   if (nmelt == 1) then 
-		      cxy(:,:) = cxy0(:,:)
-		   endif
+		if (nmelt == 1) then 
+		   cxy(:,:) = cxy0(:,:)
+		endif
 	
-		   ! read in initial (first file within the time window) beta  
-		   call read_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
+		! read in initial (first file within the time window) beta  
+		call read_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
-		   if (tpw) then
-		      ! read in variables for the rotation signal 
-		      open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
-		      & status = 'old')
+		if (tpw) then
+		   ! read in variables for the rotation signal 
+		   open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+		   & status = 'old')
 
-		      oldlambda(:,:) = (0.0,0.0)
-		      oldil(:,:) = 0.0
-		      oldm(:) = 0.0
+		   oldlambda(:,:) = (0.0,0.0)
+		   oldil(:,:) = 0.0
+		   oldm(:) = 0.0
        
-		      do n = 1, nfiles-1
-		         ! find the number of lines to skip to read in appropriate TPW components
-		         if (n == 1) then
-		            j = TIMEWINDOW(n)
-		         else
-		            j = TIMEWINDOW(n) - TIMEWINDOW(n-1) - 1
-		         endif
+		   do n = 1, nfiles-1
+		      ! find the number of lines to skip to read in appropriate TPW components
+		      if (n == 1) then
+		         j = TIMEWINDOW(n)
+		      else
+		         j = TIMEWINDOW(n) - TIMEWINDOW(n-1) - 1
+		      endif
             
-		         !skip lines to read in the rotational components corresponding to timesteps within the TW 
-		         do m = 1, j
-		            read(201,*) !skip line for il
-		            read(201,*) !skip reading in mm
-		            read(201,*) !skip reading in lambda
-		         enddo
-            
-		         !read in TPW components - total rotational change from the beginning of simulation 
-		         read(201,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
-		         read(201,'(3ES19.8E2)') (mm(i), i = 1, 3)
-		         read(201,'(18ES19.8E2)') ((lambda(i, j), i = 0, 2), j = 0, 2)
-    
-		         !rotational changes between each time step. 
-		         dm(:,n) = mm(:) - oldm(:)
-		         oldm(:) = mm(:)
-            
-		         dil(:,:,n) = il(:,:) - oldil(:,:)
-		         oldil(:,:) = il(:,:)
-            
-		         dlambda(:,:,n) = lambda(:,:) - oldlambda(:,:)
-		         oldlambda(:,:) = lambda(:,:)
-            
-		         if (n == nfiles-1) then 
-		            deltalambda(:,:,nfiles-1) = lambda(:,:)
-		         endif          
+		      !skip lines to read in the rotational components corresponding to timesteps within the TW 
+		      do m = 1, j
+		         read(201,*) !skip line for il
+		         read(201,*) !skip reading in mm
+		         read(201,*) !skip reading in lambda
 		      enddo
-		      close(201)
-		   endif !endif (TPW)
+            
+		      !read in TPW components - total rotational change from the beginning of simulation 
+		      read(201,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
+		      read(201,'(3ES19.8E2)') (mm(i), i = 1, 3)
+		      read(201,'(18ES19.8E2)') ((lambda(i, j), i = 0, 2), j = 0, 2)
     
-		   ! find index of the previous timestep
-		   m = TIMEWINDOW(nfiles-1)
-		   write(numstr2,'(I4)') m
-		   numstr2 = trim(adjustl(numstr2))
+		      !rotational changes between each time step. 
+		      dm(:,n) = mm(:) - oldm(:)
+		      oldm(:) = mm(:)
+            
+		      dil(:,:,n) = il(:,:) - oldil(:,:)
+		      oldil(:,:) = il(:,:)
+            
+		      dlambda(:,:,n) = lambda(:,:) - oldlambda(:,:)
+		      oldlambda(:,:) = lambda(:,:)
+            
+		      if (n == nfiles-1) then 
+		         deltalambda(:,:,nfiles-1) = lambda(:,:)
+		      endif          
+		   enddo
+		   close(201)
+		endif !endif (TPW)
     
-		   ! read in topography of the previous timestep
-		   call read_sl(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
- 
-		   ! condition for time window travel
-		   if (Travel.EQ.0) then 
-		      !if the TW hasnt started travelling, initial topography of the TW is that of the total simulation
-		      tinit(:,:) = tinit_0(:,:) 
-		   else
-		      !if The TW is moving, initial topography of the TW is read in
-		      j = TIMEWINDOW(1) 
-		      write(numstr,'(I4)') j
-		      numstr = trim(adjustl(numstr))
-    
-			  call read_sl(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
-		   endif
-		   !endif ! endif nmelt>0
+		! find index of the previous timestep
+		m = TIMEWINDOW(nfiles-1)
+		write(numstr2,'(I4)') m
+		numstr2 = trim(adjustl(numstr2))
+
+	   ! read in topography of the previous timestep
+	   call read_sl(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
+
+	   ! condition for time window travel
+	   if (Travel.EQ.0) then 
+	      !if the TW hasnt started travelling, initial topography of the TW is that of the total simulation
+	      tinit(:,:) = tinit_0(:,:) 
+	   else
+	      !if The TW is moving, initial topography of the TW is read in
+	      j = TIMEWINDOW(1) 
+	      write(numstr,'(I4)') j
+	      numstr = trim(adjustl(numstr))
+   
+		  call read_sl(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
+	   endif
+	   !endif nmelt>0
            
 		if (nmelt.GT.1) then
 
@@ -853,7 +817,7 @@ module sl_model_mod
 		      close(201)
       
 		      deltaS(:,:,n) = dS_converged(:,:)  !save the converged total-ocean loading into a big array
-		      ! dS(:,:,n) = deltaS(:,:,n)-deltaS(:,:,n-1)!calculate the ocean loading changes between every time step
+		   
 		   enddo
 		endif
 
@@ -882,10 +846,6 @@ module sl_model_mod
 		   read(201,*) (tresl(i,ll), i=1, nm)
 		   read(201,*) (tresk(i,ll), i=1, nm)
 		enddo
-		! 1001  format(2i5)
-		! 1002  format(20a4)
-		! 1003  format(i10,1x,i5)
-		! 1020  format(5e16.8)
 		close(201)
 
 		! Divide by l (numbers are multiplied by l in Jerry's output)
@@ -1351,8 +1311,6 @@ module sl_model_mod
 		   !write out the current ice load as a new file
 		   call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
 		endif !endif coupling
-
-
 
 		call system_clock(countf) ! Total time
 		call cpu_time(countf_cpu)
