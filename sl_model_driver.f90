@@ -2,7 +2,6 @@ program sl_model_driver
 	use sl_model_mod 
 	implicit none
 
-
 integer :: i, itersl_sh, iter_sh, dtime_sh
 real :: starttime_sh                                  ! start time of the simulation 
 integer :: iargc, nargs                                 ! Arguments read in from a bash script                              
@@ -26,9 +25,9 @@ call sl_timewindow(iter_sh)
 
 ! intialize and execute the sea-level solver
 if (iter_sh .eq. 0) then 
-	call sl_solver_init(itersl_sh, starttime_sh)
+   call sl_solver_init(itersl_sh, starttime_sh)
 elseif (iter_sh .gt. 0) then 
-	call sl_solver(itersl_sh, iter_sh, dtime_sh, starttime_sh)
+   call sl_solver(itersl_sh, iter_sh, dtime_sh, starttime_sh)
 endif
 
 end program sl_model_driver

@@ -17,15 +17,16 @@ module sl_model_mod
 	use planets_mod
 	use io_mod
 	implicit none
-    private
-	
+
+	private
+
 	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, deallocate_slarrays, sl_set_unit_num ! public module
 	public :: iterstr ! public variables
-	
+
 
    !===============================  Variables for ice sheet - sea level model coupling ===================================|
-	real, dimension(nglv,2*nglv) :: nh_bedrock        ! Northern Hemispheric bedrock provided by the ice sheet model        |
-	real, dimension(nglv,2*nglv) :: nh_iceload        ! Northern Hemispheric iceload provided by the ice sheet model        |
+   real, dimension(nglv,2*nglv) :: nh_bedrock        ! Northern Hemispheric bedrock provided by the ice sheet model        |
+   real, dimension(nglv,2*nglv) :: nh_iceload        ! Northern Hemispheric iceload provided by the ice sheet model        |
 	!=======================================================================================================================|
 
 	!============================================  Variables for the time window============================================|
@@ -364,7 +365,7 @@ module sl_model_mod
 	!=======================================================================================================================!
 	subroutine sl_solver_checkpoint(itersl, dtime)
 		integer :: itersl, dtime 
-		
+
 		if (dtime /= dt1) then 
 		   write(unit_num,*) 'dtime and dt1 should be equal to each other.'
 		   write(unit_num,*) 'Please check your set up for the variables'
@@ -379,14 +380,15 @@ module sl_model_mod
 		    write(unit_num,*) 'Terminating: program sl_model'
 		    stop
 		endif
-		
+
 		if (coupling) then !HH: should this belong somewhere else? 
 		   write(unit_num,*) 'Sea level model is coupled to the ice sheet model. Unit number is:', unit_num
  		else
 			call sl_set_unit_num(6)
 		   write(unit_num,*) 'Sea level model is running standalone. Unit number is:', unit_num
 		endif
-		
+	!	flush(unit_num)
+
 		! set up the planet profile
 		call set_planet
 		
@@ -428,14 +430,13 @@ module sl_model_mod
 	   ! read in the initial iceload from the coupled ice input folder
 		call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)	
 
-		!  Initialize topography (STEP 1)
-		if (initial_topo) then   
-			
-			write(unit_num,*) 'Reading in initial topo file'	
-			call read_sl(tinit_0, topo_initial, inputfolder)
+      !  Initialize topography (STEP 1)
+      if (initial_topo) then
+		   write(unit_num,*) 'Reading in initial topo file'
+		   call read_sl(tinit_0, topo_initial, inputfolder)
 		else  ! if initial topo is unknown
-    
-		   ! Present-day observed topography
+
+         ! Present-day observed topography
 		   write(unit_num,*) 'Reading in ETOPO2 file'
 			call read_sl(truetopo, topomodel, inputfolder)
       
@@ -484,9 +485,9 @@ module sl_model_mod
 		          endif
 		       enddo
 		    enddo
-    
+
 		    ! for the initial ice load file
-		    if (patch_ice) then 
+		    if (patch_ice) then
 		       ! add zeros to the grids that are not defined in the ice sheet model.
 		       do j = 1,2*nglv
 		          do i = 1,nglv
@@ -503,7 +504,7 @@ module sl_model_mod
 		                icexy(i,j,nfiles) = nh_iceload(i,j)
 		             endif
 		          enddo
-		       enddo 
+		       enddo
 		    endif
     
 		    !write out the current ice load as a new file to the sea-level model ice folder
@@ -644,7 +645,7 @@ module sl_model_mod
 		integer :: iter, itersl, dtime    
 		real, dimension(nglv,2*nglv), optional :: mali_iceload !HH: optional for coupled ism-slm case
 		real, dimension(nglv,2*nglv), intent(out), optional :: slchange  
-    
+
 		!===========================================================
 		!                   BEGIN TIMING & EXECUTION                      
 		!___________________________________________________________
@@ -670,7 +671,7 @@ module sl_model_mod
 			  call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
 
 		   enddo
-       
+
 		   j = TIMEWINDOW(nfiles) ! icefile number to read in from the TW array 
 		   write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
 		   write(numstr,'(I6)') j
@@ -678,7 +679,7 @@ module sl_model_mod
 
 		   ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
 		   call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
-		   
+
 			! ice thickness at the current time step inside the ISM domain provided by the ISM
 			!HH change the name nh_iceload => ism_load
 			!call read_sl(nh_iceload, 'NH_iceload', folder_coupled) 
@@ -689,7 +690,7 @@ module sl_model_mod
 		      ! add zeros to the grids that are not defined in the ice sheet model.
 		      do j = 1,2*nglv
 		         do i = 1,nglv
-		            if (nh_iceload(i,j) == 9999) then !HH: change to greater?
+		            if (nh_iceload(i,j) == 9999) then!HH: change to greater?
 		               icexy(i,j,nfiles) = 0.0
 		            endif
 		         enddo
@@ -698,13 +699,13 @@ module sl_model_mod
 		      ! merge the iceload with that from the ice sheet model.
 		      do j = 1,2*nglv
 		         do i = 1,nglv
-		             if (nh_iceload(i,j) < 9999) then 
-		                icexy(i,j,nfiles) = nh_iceload(i,j)
-		             endif
+		            if (nh_iceload(i,j) < 9999) then 
+		               icexy(i,j,nfiles) = nh_iceload(i,j)
+		            endif
 		         enddo
 		      enddo 
 		   endif
-              
+
 	    else ! if not coupling
 	       
 		   ! if sea level model is not coupled to an ice sheet model, read in iceloads from the folder inputfolder_ice
@@ -1183,23 +1184,23 @@ module sl_model_mod
       
 		   ! If the ocean loading guess has not been converged, 
 		   if (xi > epsilon1) then      
-		       ! new guess to the topography correction
-		       topoxy(:,:) = tinit(:,:) - deltaslxy(:,:) ! (eq. 39)
+		      ! new guess to the topography correction
+		      topoxy(:,:) = tinit(:,:) - deltaslxy(:,:) ! (eq. 39)
         
-		       ! new ocean function
-		       do j = 1,2*nglv
-		          do i = 1,nglv
-		             if (topoxy(i,j) >= 0.0) then
-		                cxy(i,j) = 0.0
-		             else
-		                cxy(i,j) = 1.0
-		             endif
-		          enddo
-		       enddo
+		      ! new ocean function
+		      do j = 1,2*nglv
+		         do i = 1,nglv
+		            if (topoxy(i,j) >= 0.0) then
+		               cxy(i,j) = 0.0
+		            else
+		               cxy(i,j) = 1.0
+		            endif
+		         enddo
+		      enddo
        
-		       !new guess to ocean*beta function
-		       cstarxy(:,:) = cxy(:,:) * beta(:,:) ! (eq. 65)
-		       call spat2spec(cstarxy, cstarlm, spheredat) ! Decompose cstar
+		      !new guess to ocean*beta function
+		      cstarxy(:,:) = cxy(:,:) * beta(:,:) ! (eq. 65)
+		      call spat2spec(cstarxy, cstarlm, spheredat) ! Decompose cstar
        
 		      ! new guess to the topo correction
 		      tOxy(:,:) = tinit * (cstarxy(:,:) - cstar0(:,:)) ! (eq. 70)
@@ -1219,12 +1220,12 @@ module sl_model_mod
 		      call abort ! Terminate program
 		      !exit ! DEBUG line: Continue inner loop despite non-convergence. Normal operation: Enable the 2 lines above.
 		   endif
-		   ninner = ninner + 1
+         ninner = ninner + 1
       
 		enddo ! End inner loop
-		!-----------------------------------------------------------
+      !-----------------------------------------------------------
 		!<<<<<<<<<<<<<<<<<<<< End of inner loop >>>>>>>>>>>>>>>>>>>>
-		!-----------------------------------------------------------
+      !-----------------------------------------------------------
 		write(unit_num,'(A,I4,A)') '  ', ninner, ' inner-loop iterations'
 
 		!HH: print out the number of iteration it takes for the inner convergence
