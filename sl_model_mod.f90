@@ -20,7 +20,7 @@ module sl_model_mod
 
 	private
 
-	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, deallocate_slarrays, sl_set_unit_num ! public module
+	public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, sl_solver, sl_deallocate_array, sl_set_unit_num ! public module
 	public :: iterstr ! public variables
 
 
@@ -338,7 +338,7 @@ module sl_model_mod
 	
 	
 	!=======================================================================================================================!
-	subroutine deallocate_slarrays
+	subroutine sl_deallocate_array
 		
 		deallocate(mask, iceload, icefiles, TIMEWINDOW)
 		deallocate(times, lovebetatt, lovebetattrr)
@@ -350,7 +350,7 @@ module sl_model_mod
 		deallocate(dil, dlambda ,deltalambda)
 		deallocate(dm)  
 		
-	end subroutine deallocate_slarrays
+	end subroutine sl_deallocate_array
 	!_______________________________________________________________________________________________________________________!
 	
 	
