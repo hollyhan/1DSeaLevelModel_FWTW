@@ -10,19 +10,19 @@ end module constants_mod
 module planets_mod
 !_________________________________________________________________________________________________________!
    use constants_mod
-   
+
    real :: radius
    real :: mass
    real :: rhoi
    real :: rhow
    real :: gacc
-   real :: omega 
+   real :: omega
    real :: acoef, ccoef
    real :: moiA, moiC
    real :: kf
-   
+
    contains
-   
+
    ! -------------------------------------------------------------------------
    subroutine earth_init
 
@@ -35,13 +35,13 @@ module planets_mod
       moiA = 0.3296145*mass*radius**2 ! Principal moment of inertia of the Earth
       moiC = 0.3307007*mass*radius**2 ! Principal moment of inertia of the Earth
       kf = 0.9342+0.008             ! Fluid (Tidal) Love number
-      
+
    end subroutine earth_init
-   
-   
+
+
 	! -------------------------------------------------------------------------
    subroutine mars_init
-		
+
       radius = 3.3899E6             ! Radius of Mars (m)
       mass = 6.4185E23              ! Mass of Mars (kg)
       rhoi = 1220.0                 ! Density of ice mix on Mars (kg/m^3)
@@ -56,13 +56,13 @@ module planets_mod
       ! 1.203959 | 1.127384 | 1.110566 | 1.065899 | 1.023186 | 0.9458358 | 0.8986673
       !----------------------------------------------------------------------------------!
       kf = 0.899                    ! Fluid (Tidal) Love number
-      
+
    end subroutine mars_init
-   
+
 end module planets_mod
 
 
-!=====================================================================================netCDF I/O mod===! 
+!=====================================================================================netCDF I/O mod===!
 module io_mod
 !-------------------------------------------------------------------------------------------------------
    use user_specs_mod, only: nglv, ext, fType, outputfolder, gridfolder, grid_lat, grid_lon
@@ -72,47 +72,47 @@ module io_mod
    contains
 	
    subroutine check(status)
-    
-	 integer, intent ( in) :: status
-    
-     if(status /= nf90_noerr) then 
-       print *, trim(nf90_strerror(status))
-       stop "Stopped"
-     end if
-   
+
+	   integer, intent ( in) :: status
+
+      if(status /= nf90_noerr) then
+         print *, trim(nf90_strerror(status))
+         stop "Stopped"
+      endif
+
    end subroutine check
-   
-	
+
+
 	! -------------------------------------------------------------------------
    subroutine read_sl(data_slm, filename, filepath, suffix, fext)
 	   character (len = *), intent (in) :: filename, filepath
-	   real, dimension(nglv,2*nglv), intent(inout) :: data_slm 
+	   real, dimension(nglv,2*nglv), intent(inout) :: data_slm
 	   character (len = *), optional :: suffix, fext
-	   
-	   if (fType == 'text') then			
+
+	   if (fType == 'text') then
 		   call read_txt(data_slm, filename, filepath, suffix, fext)
-	   elseif (fType == 'binary') then 
+	   elseif (fType == 'binary') then
 		   call read_nf90(data_slm, filename, filepath, suffix, fext)
 	   endif
-	   
+
    end subroutine read_sl
-   
-	
+
+
 	! -------------------------------------------------------------------------
    subroutine write_sl(data_slm, filename, filepath, suffix, fext)
 	   character (len = *), intent (in) :: filename, filepath
-	   real, dimension(nglv,2*nglv), intent(in) :: data_slm 
+	   real, dimension(nglv,2*nglv), intent(in) :: data_slm
 	   character (len = *), optional :: suffix, fext
 
 	   if (fType == 'text') then
 		   call write_txt(data_slm, filename, filepath, suffix, fext)
-	   elseif (fType == 'binary') then 
+	   elseif (fType == 'binary') then
 		   call write_nf90(data_slm, filename, filepath, suffix, fext)
 	   endif
-	   
+
    end subroutine write_sl
-   
-	
+
+
 	! -------------------------------------------------------------------------
    subroutine write_nf90(data_slm, filename, filepath, suffix, fext)
 
@@ -120,51 +120,57 @@ module io_mod
 	   integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
 	   integer, dimension(2) :: dimids
 	   real, dimension(nglv,2*nglv), intent(in) :: data_slm !data in the SLM written to the netCDF file
-	   character (len = *), optional ::  suffix 
+	   character (len = *), optional ::  suffix
 	   character (len = *), optional :: fext
 	   real, dimension(nglv)        :: latgrid
 	   real, dimension(2*nglv)      :: longrid
-	   
+
 	   ! attribute IDs for I/O in netCDF
 	   !character (len = *), parameter :: UNITS = "units"
 	   !character (len = *), parameter :: TOPO_UNITS = "meters"
 	   !character (len = *), parameter :: SL_UNITS = "meters"
 	   !character (len = *), parameter :: LAT_UNITS = "degrees"
 	   !character (len = *), parameter :: LON_UNITS = "degrees_east"
-	   
-	   
+
+
 	   ! Read in lat-lon grid files
-	   open(unit = 201, file = gridfolder//grid_lat, form = 'formatted', access = 'sequential', status = 'old')
+	   open(unit = 201, file = trim(gridfolder)//trim(grid_lat), form = 'formatted', &
+		& access = 'sequential', status = 'old')
 	   read(201,*) latgrid
 	   close(201)
 
-	   open(unit = 201, file = gridfolder//grid_lon, form = 'formatted', access = 'sequential', status = 'old')
+	   open(unit = 201, file = trim(gridfolder)//trim(grid_lon), form = 'formatted', &
+		& access = 'sequential', status = 'old')
 	   read(201,*) longrid
 	   close(201)
-	   
+
        !write out data
-	   
+
 	   !create file
    	if (present (suffix)) then
- 		   if (present (fext)) then 
- 		      call check( nf90_create(filepath//filename//trim(suffix)//fext, nf90_clobber, ncid) ) 
+ 		   if (present (fext)) then
+ 		      call check( nf90_create(trim(filepath)//trim(filename)//trim(suffix)//trim(fext), &
+				& nf90_clobber, ncid) )
  		   else
- 			   call check( nf90_create(filepath//filename//trim(suffix)//ext, nf90_clobber, ncid) ) 
+ 			   call check( nf90_create(trim(filepath)//trim(filename)//trim(suffix)//trim(ext), &
+				nf90_clobber, ncid) )
  		   endif
       else
-		   if (present (fext)) then 
-		      call check( nf90_create(filepath//filename//fext, nf90_clobber, ncid) ) 
+		   if (present (fext)) then
+		      call check( nf90_create(trim(filepath)//trim(filename)//trim(fext), nf90_clobber, &
+				& ncid) )
 		   else
-			   call check( nf90_create(filepath//filename//ext, nf90_clobber, ncid) ) 
+			   call check( nf90_create(trim(filepath)//trim(filename)//trim(ext), nf90_clobber, &
+				& ncid) )
 		   endif
    	endif
-	   
+
       call check( nf90_def_dim(ncid, 'lon', nglv*2, lon_dimid)  ) ! Define the dimensions of the griddata
       call check( nf90_def_dim(ncid, 'lat', nglv,   lat_dimid)  )
 
       dimids =  (/ lon_dimid, lat_dimid /)                        ! Define the dimension of the variable
 
-      call check( nf90_def_var(ncid, filename, nf90_double, dimids, varid)) ! Define variable
+      call check( nf90_def_var(ncid, trim(filename), nf90_double, dimids, varid)) ! Define variable
       call check( nf90_def_var(ncid, 'lat', nf90_double, lat_dimid, lat_varid))
       call check( nf90_def_var(ncid, 'lon', nf90_double, lon_dimid, lon_varid))
       call check( nf90_enddef(ncid)) ! End definition
@@ -173,35 +179,38 @@ module io_mod
    	call check( nf90_put_var(ncid, lon_varid, longrid))
    	call check( nf90_put_var(ncid, lat_varid, latgrid))
       call check( nf90_close(ncid))
-	   
+
    end subroutine write_nf90
-   
-	
+
+
 	! -------------------------------------------------------------------------
    subroutine read_nf90(data_slm, filename, filepath, suffix, fext)
-	     
-	   character (len = *), intent(in) :: filename,  filepath !file name and path
+
+	   character (len = *), intent(in) :: filename, filepath !file name and path
 	   real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
 	   real, dimension(nglv,2*nglv), intent(out) :: data_slm
-	   character (len = *), optional ::  suffix 
+	   character (len = *), optional ::  suffix
 	   character (len = *), optional :: fext
-	   integer :: ncid, varid 
+	   integer :: ncid, varid
 
+      !open the file
       if (present (suffix)) then
- 		   if (present (fext)) then 
- 		      call check( nf90_open(filepath//filename//trim(suffix)//fext, nf90_nowrite, ncid) ) !open the file
+ 		   if (present (fext)) then
+ 		      call check( nf90_open(trim(filepath)//trim(filename)//trim(suffix)//trim(fext), &
+				& nf90_nowrite, ncid) )
  		   else
- 			   call check( nf90_open(filepath//filename//trim(suffix)//ext, nf90_nowrite, ncid) ) !open the file
+ 			   call check( nf90_open(trim(filepath)//trim(filename)//trim(suffix)//trim(ext), &
+				& nf90_nowrite, ncid) )
  		   endif
       else
-		   if (present (fext)) then 
-		      call check( nf90_open(filepath//filename//fext, nf90_nowrite, ncid) ) !open the file
+		   if (present (fext)) then
+		      call check( nf90_open(trim(filepath)//trim(filename)//trim(fext), nf90_nowrite, ncid) )
 		   else
-			   call check( nf90_open(filepath//filename//ext, nf90_nowrite, ncid) ) !open the file
+			   call check( nf90_open(trim(filepath)//trim(filename)//trim(ext), nf90_nowrite, ncid) )
 		   endif
    	endif
 	   
-	   call check( nf90_inq_varid(ncid, filename, varid) ) !get varid of the data variable
+	   call check( nf90_inq_varid(ncid, trim(filename), varid) ) !get varid of the data variable
 	   call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
 	   call check( nf90_close(ncid) ) ! close the file
 	   data_slm = reshape(data_temp,[nglv,2*nglv])
@@ -236,13 +245,13 @@ module io_mod
     end if
 
 	if (present (suffix)) then
-		open(unit = 201, file = filepath//filename//trim(suffix)//fext, form = 'formatted', access = 'sequential', &
-        & status = 'replace')
+		open(unit = 201, file = trim(filepath)//trim(filename)//trim(suffix)//fext, form = 'formatted', &
+		& access = 'sequential', status = 'replace')
         write(201,'(ES16.9E2)') data_slm
         close(201)
 	else
-		open(unit = 201, file = filepath//filename//fext, form = 'formatted', access = 'sequential', &
-        & status = 'replace')
+		open(unit = 201, file = trim(filepath)//trim(filename)//trim(fext), form = 'formatted', &
+		& access = 'sequential', status = 'replace')
         write(201,'(ES16.9E2)') data_slm
         close(201)
 	endif
@@ -262,13 +271,13 @@ module io_mod
     end if
 
 	if (present (suffix)) then
-		open(unit = 201, file = filepath//filename//trim(suffix)//fext, form = 'formatted', access = 'sequential', &
-        & status = 'old')
+		open(unit = 201, file = trim(filepath)//trim(filename)//trim(suffix)//trim(fext), form = 'formatted', &
+		& access = 'sequential', status = 'old')
         read(201,*) data_slm
         close(201)
 	else
-		open(unit = 201, file = filepath//filename//fext, form = 'formatted', access = 'sequential', &
-        & status = 'old')
+		open(unit = 201, file = trim(filepath)//trim(filename)//trim(fext), form = 'formatted', &
+		& access = 'sequential', status = 'old')
         read(201,*) data_slm
         close(201)
 	endif
