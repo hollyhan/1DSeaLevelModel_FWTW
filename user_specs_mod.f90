@@ -61,36 +61,36 @@ module user_specs_mod
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
    ! Input directory
-   character(*), parameter :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
-   character(*), parameter :: inputfolder  = 'INPUT_FILES/others/'
-   character(*), parameter :: planetfolder = 'INPUT_FILES/earthmodel/'   
-   character(*), parameter :: gridfolder = 'INPUT_FILES/others/'   
+   character(100) :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
+   character(100) :: inputfolder  = 'INPUT_FILES/others/'
+   character(100) :: planetfolder = 'INPUT_FILES/earthmodel/'   
+   character(100) :: gridfolder = 'INPUT_FILES/others/'   
 	  
    ! Output directory
-   character(*), parameter :: outputfolder = 'OUTPUT_SLM/' 
-   character(*), parameter :: outputfolder_ice = 'ICELOAD_SLM/'
+   character(100) :: outputfolder = 'OUTPUT_SLM/' 
+   character(100) :: outputfolder_ice = 'ICELOAD_SLM/'
 
    ! Other directory
-   character(*), parameter :: folder_coupled = '' 
+   character(100) :: folder_coupled = '' 
   
    ! Common file extensions============================================================================================!
    ! Since the code does not explicitly specify the precision (single or double) of the input/output files, an 
    !  extension could be used to designate the type. Alternatively, the files could also be delimited text files (to 
    !  be implemented later). Specify the common extension here (applicable to the names of ALL input/output files): 
-   character(4), parameter :: ext = ''       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'binary'
+   character(4) :: ext = ''       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'binary'
    ! ... and their file type:
-   character(*), parameter :: fType = 'text'  ! 'binary' | 'text' | empty quote '' for both binary and text format
+   character(6) :: fType = 'text'  ! 'binary' | 'text' | empty quote '' for both binary and text format
    
    ! Various selection ================================================================================================!
-   character(*), parameter :: whichplanet   = 'earth'                    ! e.g. 'earth', 'Mars', etc.
-   character(*), parameter :: planetmodel   = 'prem_coll_512.l120C.ump5.lm5' ! For now, this is generated from maxwell.f by JXM
-   character(*), parameter :: icemodel      = 'AISload_Run85_0_0_'       ! Common name of ice files in 'inputfolder_ice'
-   character(*), parameter :: icemodel_out  = 'AISload_Run85_0_0_'       ! Name of ice files in 'outputfolder_ice'
-   character(*), parameter :: timearray     = 'times'                    ! Name of times array text file
-   character(*), parameter :: topomodel     = 'etopo2_512_AISbedmap2'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka       
-   character(*), parameter :: topo_initial  = 'etopo2_512_AISbedmap2'        
-   character(*), parameter :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
-   character(*), parameter :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
+   character(5)  :: whichplanet   = 'earth'                    ! e.g. 'earth', 'Mars', etc.
+   character(60) :: planetmodel   = 'prem_512.l60K2C.sum18p6.dum19p2.tz19p4.lm22' ! For now, this is generated from maxwell.f by JXM
+   character(20) :: icemodel      = 'iceload5g'       ! Common name of ice files in 'inputfolder_ice'
+   character(20) :: icemodel_out  = 'iceload_out_'       ! Name of ice files in 'outputfolder_ice'
+   character(4)  :: timearray     = 'times'                    ! Name of times array text file
+   character(40) :: topomodel     = 'etopo2_512_AISbedmap2'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka       
+   character(40) :: topo_initial  = 'etopo2_512_AISbedmap2'
+   character(20) :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
+   character(20) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
    
    ! Model parameters==================================================================================================!
    integer, parameter :: norder = 512           ! Max spherical harmonic degree/order
@@ -101,24 +101,24 @@ module user_specs_mod
                                                 !  (if doing a convergence check for outer loop, see below)
 
    ! CHECK TRUE OR FALSE ==============================================================================================!
-   logical, parameter :: checkmarine = .false.  ! .true. to check for floating marine-based ice
+   logical :: checkmarine = .false.  ! .true. to check for floating marine-based ice
                                                 ! .false. to assume all ice is grounded
-   logical, parameter :: tpw = .true.           ! .true. to incorporate rotational feedback								                                                                                   ! .false. for non-rotating planet												
-   logical, parameter :: calcRG = .true.       ! .true. to calculate the radial and geoid displacements; note that  
-                                                !    the "true" option only works for a fixed number of outer loops 
+   logical :: tpw = .true.           ! .true. to incorporate rotational feedback								                                                                                   ! .false. for non-rotating planet
+   logical :: calcRG = .true.       ! .true. to calculate the radial and geoid displacements; note that  
+                                                !    the "true" option only works for a fixed number of outer loops
                                                 !    (i.e., no convergence checks!).
-                                                ! .false. to only calculate RSL. 
-   logical, parameter :: input_times = .false.  ! .true. if time array is provided from an existing text file                                                                                              ! .false. if timearray is calculated within the main code                              
-   logical, parameter :: initial_topo = .true. ! .true. initial topo is known
+                                                ! .false. to only calculate RSL.
+   logical :: input_times = .false.  ! .true. if time array is provided from an existing text file                                                                    ! .false. if timearray is calculated within the main code                              
+   logical :: initial_topo = .true. ! .true. initial topo is known
                                                 ! .false. the code assumes initial topography is equal to modern 
                                                 !      topography file "truetopo"
-   logical, parameter :: iceVolume = .true.     ! .true. to output ice volume at each time step
-   logical, parameter :: coupling = .false.      ! .true. if the SLM is coupled to the ISM
+   logical :: iceVolume = .true.     ! .true. to output ice volume at each time step
+   logical :: coupling = .false.      ! .true. if the SLM is coupled to the ISM
                                                 ! .false. if not coupled                                 
-   logical, parameter :: patch_ice = .false.    ! .true. patch ice data with zeros
+   logical :: patch_ice = .false.    ! .true. patch ice data with zeros
                                                 ! .false. merge the icemodel files with ice grids provided by the ISM
                                                 !. patch_ice is only activated when 'coupling' is .true.
-                                
+
    !Time Window parameters=======================================================================================!
 
    !                      |--------- total length of a time window------------|
@@ -130,18 +130,19 @@ module user_specs_mod
    ! if you would like a forward simulation WITHOUT a timewindow, simply set 'L_sim' equal to 'Ldt1',
    ! and set Ldt2, Ldt3 and Ldt4 to 0. 
 
-   integer, parameter :: L_sim = 300! total length of a simulation, in years
+   integer:: L_sim = 20! total length of a simulation, in years
    
    !internal time step intervals (dt's cannot be set as 0 but Ldt's can be)
    !**NOTE** dt# values should be defined such that dt#/dt1 is a positive integer
-   integer, parameter :: dt1 = 100! the finest time interval in the TW (in years), usually equal to coupling time step
-   integer, parameter :: dt2 = 10!  
-   integer, parameter :: dt3 = 10!
-   integer, parameter :: dt4 = 10! 
-   
-   integer, parameter :: Ldt1 = 300! total length of time over which dt1 covers 
-   integer, parameter :: Ldt2 = 0! 
-   integer, parameter :: Ldt3 = 0!
-   integer, parameter :: Ldt4 = 0!
-   
+   integer :: dt1 = 5! the finest time interval in the TW (in years), usually equal to coupling time step
+   integer :: dt2 = 10!
+   integer :: dt3 = 10!
+   integer :: dt4 = 10!
+
+   integer :: Ldt1 = 20! total length of time over which dt1 covers
+   integer :: Ldt2 = 0!
+   integer :: Ldt3 = 0!
+   integer :: Ldt4 = 0!
+
+							
 end module user_specs_mod

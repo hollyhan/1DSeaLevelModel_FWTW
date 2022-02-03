@@ -49,7 +49,7 @@ OBJS = sl_model_driver.o \
        sl_model_mod.o \
        spharmt.o \
        user_specs_mod.o\
-       init_slm_mod.o
+       sl_init_mod.o
 
 all: slmodel.exe
 
@@ -57,7 +57,7 @@ slmodel.exe: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 sl_model_driver.o: sl_model_mod.o
-sl_model_mod.o: spharmt.o user_specs_mod.o init_slm_mod.o
+sl_model_mod.o: spharmt.o user_specs_mod.o sl_init_mod.o
 
 clean:
 	$(RM) *.o *.mod slmodel.exe
