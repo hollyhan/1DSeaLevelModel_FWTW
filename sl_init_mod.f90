@@ -289,12 +289,12 @@ module sl_io_mod
 
    ! -------------------------------------------------------------------------
    ! read variables needed to drive the SLM from namelist
-   subroutine sl_drive_readnl(config_itersl, config_dt1, config_starttime)
+   subroutine sl_drive_readnl(itersl, dt1, starttime)
 
-      real, intent(out) :: config_starttime
-      integer, intent(out) :: config_itersl, config_dt1
+      real, intent(out) :: starttime
+      integer, intent(out) :: itersl, dt1
 
-      namelist /time_config/ config_starttime, config_itersl, config_dt1
+      namelist /time_config/ starttime, itersl, dt1
 
       open(201, file='namelist.sealevel', status='old')
       read(201, time_config)
@@ -305,80 +305,80 @@ module sl_io_mod
 
    ! -------------------------------------------------------------------------
    ! read all other variables from namelist
-   subroutine sl_readnl(config_inputfolder_ice, config_inputfolder, &
-                        config_planetfolder, config_gridfolder, &
-                        config_outputfolder, config_outputfolder_ice, &
-                        config_folder_coupled, config_ext, config_fType, &
-                        config_planetmodel, config_icemodel, config_icemodel_out, &
-                        config_timearray, config_topomodel, config_topo_initial, &
-                        config_grid_lat, config_grid_lon, config_checkmarine, &
-                        config_tpw, config_calcRG, config_input_times, &
-                        config_initial_topo, config_iceVolume, config_coupling, &
-                        config_patch_ice, config_L_sim, config_dt1, config_dt2, &
-                        config_dt3, config_dt4, config_Ldt1, config_Ldt2, &
-                        config_Ldt3, config_Ldt4, config_whichplanet)
+   subroutine sl_readnl(inputfolder_ice, inputfolder, &
+                        planetfolder, gridfolder, &
+                        outputfolder, outputfolder_ice, &
+                        folder_coupled, ext, fType, &
+                        planetmodel, icemodel, icemodel_out, &
+                        timearray, topomodel, topo_initial, &
+                        grid_lat, grid_lon, checkmarine, &
+                        tpw, calcRG, input_times, &
+                        initial_topo, iceVolume, coupling, &
+                        patch_ice, L_sim, dt1, dt2, &
+                        dt3, dt4, Ldt1, Ldt2, &
+                        Ldt3, Ldt4, whichplanet)
 
-      character(*), intent(out) :: config_inputfolder_ice
-      character(*), intent(out) :: config_inputfolder
-      character(*), intent(out) :: config_planetfolder
-      character(*), intent(out) :: config_gridfolder
-      character(*), intent(out) :: config_outputfolder
-      character(*), intent(out) :: config_outputfolder_ice
-      character(*), intent(out) :: config_folder_coupled
+      character(*), intent(out) :: inputfolder_ice
+      character(*), intent(out) :: inputfolder
+      character(*), intent(out) :: planetfolder
+      character(*), intent(out) :: gridfolder
+      character(*), intent(out) :: outputfolder
+      character(*), intent(out) :: outputfolder_ice
+      character(*), intent(out) :: folder_coupled
 
-      character(*), intent(out) :: config_ext
-      character(*), intent(out) :: config_fType
+      character(*), intent(out) :: ext
+      character(*), intent(out) :: fType
 
-      character(*), intent(out) :: config_planetmodel
-      character(*), intent(out) :: config_icemodel
-      character(*), intent(out) :: config_icemodel_out
-      character(*), intent(out) :: config_timearray
-      character(*), intent(out) :: config_topomodel
-      character(*), intent(out) :: config_topo_initial
-      character(*), intent(out) :: config_grid_lat
-      character(*), intent(out) :: config_grid_lon
+      character(*), intent(out) :: planetmodel
+      character(*), intent(out) :: icemodel
+      character(*), intent(out) :: icemodel_out
+      character(*), intent(out) :: timearray
+      character(*), intent(out) :: topomodel
+      character(*), intent(out) :: topo_initial
+      character(*), intent(out) :: grid_lat
+      character(*), intent(out) :: grid_lon
 
-      logical, intent(out)  :: config_checkmarine
-      logical, intent(out)  :: config_tpw
-      logical, intent(out)  :: config_calcRG
-      logical, intent(out)  :: config_input_times
-      logical, intent(out)  :: config_initial_topo
-      logical, intent(out)  :: config_iceVolume
-      logical, intent(out)  :: config_coupling
-      logical, intent(out)  :: config_patch_ice
+      logical, intent(out)  :: checkmarine
+      logical, intent(out)  :: tpw
+      logical, intent(out)  :: calcRG
+      logical, intent(out)  :: input_times
+      logical, intent(out)  :: initial_topo
+      logical, intent(out)  :: iceVolume
+      logical, intent(out)  :: coupling
+      logical, intent(out)  :: patch_ice
 
-      integer, intent(out)  :: config_L_sim
-      integer, intent(out)  :: config_dt1
-      integer, intent(out)  :: config_dt2
-      integer, intent(out)  :: config_dt3
-      integer, intent(out)  :: config_dt4
-      integer, intent(out)  :: config_Ldt1
-      integer, intent(out)  :: config_Ldt2
-      integer, intent(out)  :: config_Ldt3
-      integer, intent(out)  :: config_Ldt4
+      integer, intent(out)  :: L_sim
+      integer, intent(out)  :: dt1
+      integer, intent(out)  :: dt2
+      integer, intent(out)  :: dt3
+      integer, intent(out)  :: dt4
+      integer, intent(out)  :: Ldt1
+      integer, intent(out)  :: Ldt2
+      integer, intent(out)  :: Ldt3
+      integer, intent(out)  :: Ldt4
 
-      character(*), intent(out) :: config_whichplanet
+      character(*), intent(out) :: whichplanet
 
-      namelist /io_directory/ config_inputfolder_ice, config_inputfolder, &
-                              config_planetfolder, config_gridfolder, &
-                              config_outputfolder, config_outputfolder_ice, &
-                              config_folder_coupled
+      namelist /io_directory/ inputfolder_ice, inputfolder, &
+                              planetfolder, gridfolder, &
+                              outputfolder, outputfolder_ice, &
+                              folder_coupled
 
-      namelist /file_format/ config_ext, config_fType
+      namelist /file_format/ ext, fType
 
-      namelist   /file_name/ config_planetmodel, config_icemodel, config_icemodel_out, &
-                           config_timearray, config_topomodel, config_topo_initial, &
-                           config_grid_lat,config_grid_lon
+      namelist   /file_name/ planetmodel, icemodel, icemodel_out, &
+                           timearray, topomodel, topo_initial, &
+                           grid_lat,grid_lon
 
-      namelist /model_config/ config_checkmarine, config_tpw, config_calcRG, &
-                              config_input_times, config_initial_topo, config_iceVolume, &
-                              config_coupling, config_patch_ice
+      namelist /model_config/ checkmarine, tpw, calcRG, &
+                              input_times, initial_topo, iceVolume, &
+                              coupling, patch_ice
 
-      namelist /timewindow_config/ config_L_sim, config_dt1, config_dt2, config_dt3, &
-                                   config_dt4, config_Ldt1, config_Ldt2, config_Ldt3, &
-                                   config_Ldt4
+      namelist /timewindow_config/ L_sim, dt1, dt2, dt3, &
+                                   dt4, Ldt1, Ldt2, Ldt3, &
+                                   Ldt4
 
-      namelist /others/ config_whichplanet
+      namelist /others/ whichplanet
 
       open(201, file='namelist.sealevel', status='old', form='formatted')
       read(201, io_directory)

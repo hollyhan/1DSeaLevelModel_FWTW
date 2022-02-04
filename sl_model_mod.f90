@@ -532,7 +532,7 @@ module sl_model_mod
       !================== total ocean loading change =====================
       ! initialize the total ocean loading change and output as a file
       deltaS(:,:,1) = (0.0,0.0)
-      open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
       & status = 'replace')
       write(201,'(ES16.9E2)') deltaS(:,:,1)
       close(201)
@@ -541,11 +541,11 @@ module sl_model_mod
       !========================== computing time =========================
       ! To write out how much time it took to compute sea-level change over one step
       ! Open a new file
-      open(unit = 201, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
       & status = 'replace')
       close(201)
 
-      open(unit = 201, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
       & status = 'replace')
       close(201)
 
@@ -553,7 +553,7 @@ module sl_model_mod
       !========================== time array =============================
       if (.not. input_times) then !if time array is not read in from a text file, make a new one
          ! write a new file
-         open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(outputfolder)//timearray, form = 'formatted', access = 'sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') starttime
          close(201)
@@ -572,7 +572,7 @@ module sl_model_mod
       lambda(:,:) = 0.0
 
       ! write the values (0.0) for the first timestep
-      open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
       & status = 'replace')
       write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
       ! write(unit_num,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,1), dm(:,1), dlambda(:,:,1)
@@ -605,27 +605,25 @@ module sl_model_mod
 
          ice_volume = icestarlm(0,0)*4*pi*radius**2
 
-         open(unit = 201, file = outputfolder//'ice_volume', form = 'formatted', access ='sequential', &
+         open(unit = 201, file = trim(outputfolder)//'ice_volume', form = 'formatted', access ='sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') ice_volume
          close(201)
       endif
 
       !HH: print out the number of iteration it takes for the inner convergence
-      open(unit = 201, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
+      open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
       & status = 'replace')
       close(201)
 
       !HH: print out the nmelt
-      open(unit = 201, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
+      open(unit = 201, file = trim(outputfolder)//'nmelt', form = 'formatted', access ='sequential', &
       & status = 'replace')
       close(201)
 
       write(unit_num,*) 'DONE INITIALIZATION.'
    !   call exit
    end subroutine sl_solver_init
-   !endif !  DONE INITIALIZATION (NMELT=0)
-
 
    !========================================================================================================================
    subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, mali_mask, slchange)
@@ -1194,14 +1192,14 @@ module sl_model_mod
       write(unit_num,'(A,I4,A)') '  ', ninner, ' inner-loop iterations'
 
       !HH: print out the number of iteration it takes for the inner convergence
-      open(unit = 201, file = outputfolder//'numiter', form = 'formatted', access ='sequential', &
+      open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
       & status = 'old', position='append')
       write(201,'(I5)') ninner
       close(201)
 
       ! Write out the converged rotation-related quantities
       if (tpw) then
-         open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
          & status = 'old', position='append')
          write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
          close(201)
@@ -1258,7 +1256,7 @@ module sl_model_mod
       numstr = trim(adjustl(numstr))
 
       ! nmelt
-      open(unit = 201, file = outputfolder//'nmelt', form = 'formatted', access ='sequential', &
+      open(unit = 201, file = trim(outputfolder)//'nmelt', form = 'formatted', access ='sequential', &
       & status = 'old',position='append')
       write(201,'(I4)') nmelt
       close(201)
@@ -1273,14 +1271,14 @@ module sl_model_mod
       call write_sl(beta, 'beta', outputfolder, suffix=numstr)
 
       ! output converged total ocean loading changes
-      open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
       & status = 'replace')
       write(201,'(ES14.7E2)') deltaS(:,:,nfiles)
       close(201)
 
       if (iceVolume) then
          ice_volume = icestarlm(0,0)*4*pi*radius**2 !multiply the (0,0) component of ice to the area of a sphere
-         open(unit = 201, file = outputfolder//'ice_volume', form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(outputfolder)//'ice_volume', form = 'formatted', access = 'sequential', &
          & status = 'old', position = 'append')
          write(201,'(ES14.4E2)') ice_volume
          close(201)
@@ -1321,12 +1319,12 @@ module sl_model_mod
       call cpu_time(countf_cpu)
 
       ! Write out total compuatation time of sea level change over current timestep
-      open(unit = 201, file = outputfolder//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'elapsed_wall_time', form = 'formatted', access = 'sequential', &
       & status = 'old', position='append')
       write(201,'(ES14.4E2)') float(countf-counti)/float(countrate)
       close(201)
 
-      open(unit = 201, file = outputfolder//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'elapsed_cpu_time', form = 'formatted', access = 'sequential', &
       & status = 'old', position='append')
       write(201,'(ES14.4E2)') countf_cpu-counti_cpu
       close(201)
