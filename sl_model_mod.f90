@@ -553,7 +553,7 @@ module sl_model_mod
       !========================== time array =============================
       if (.not. input_times) then !if time array is not read in from a text file, make a new one
          ! write a new file
-         open(unit = 201, file = trim(outputfolder)//timearray, form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(outputfolder)//trim(timearray), form = 'formatted', access = 'sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') starttime
          close(201)
@@ -688,8 +688,8 @@ module sl_model_mod
 
       !Time array
       if (input_times) then ! time array is inputted from an existing text file, read in and write out
-         open(unit = 201, file = inputfolder//timearray, form = 'formatted', access = 'sequential', status = 'old')
-         open(unit = 202, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(inputfolder)//trim(timearray), form = 'formatted', access = 'sequential', status = 'old')
+         open(unit = 202, file = trim(outputfolder)//trim(timearray), form = 'formatted', access = 'sequential', &
          & status = 'replace')
          read(201,*) times
          write(202,'(ES14.4E2)') times
@@ -700,7 +700,7 @@ module sl_model_mod
          do i = 1, nfiles
             times(i) = starttime + TIMEWINDOW(i)*dt1
          enddo
-          open(unit = 201, file = outputfolder//timearray, form = 'formatted', access = 'sequential', &
+          open(unit = 201, file = trim(outputfolder)//trim(timearray), form = 'formatted', access = 'sequential', &
          & status = 'old', position='append')
          write(201,'(ES14.4E2)') times(nfiles)
          close(201)
@@ -727,7 +727,7 @@ module sl_model_mod
 
       if (tpw) then
          ! read in variables for the rotation signal
-         open(unit = 201, file = outputfolder//'TPW', form = 'formatted', access = 'sequential', &
+         open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
          & status = 'old')
 
          oldlambda(:,:) = (0.0,0.0)
@@ -814,7 +814,7 @@ module sl_model_mod
             write(numstr,'(I4)') j
             numstr = trim(adjustl(numstr))
 
-            open(unit = 201, file = outputfolder//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
+            open(unit = 201, file = trim(outputfolder)//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
             & status = 'old')
             read(201,'(ES16.9E2)') dS_converged(:,:)
             close(201)
