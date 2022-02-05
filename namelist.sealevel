@@ -1,60 +1,60 @@
 &time_config
-    config_itersl = 1
-    config_starttime = 0
-    config_dt1 = 5
+    itersl = 1
+    starttime = 0
+    dt1 = 5
 
 /
 &io_directory
-    config_inputfolder_ice = 'INPUT_FILES/icemodel/'
-    config_inputfolder = 'INPUT_FILES/others/'
-    config_planetfolder = 'INPUT_FILES/earthmodel/'
-    config_gridfolder = 'INPUT_FILES/others/'
-    config_outputfolder = 'OUTPUT_SLM/'
-    config_outputfolder_ice = 'ICELOAD_SLM/'
-    config_folder_coupled = ''
+    inputfolder_ice = 'INPUT_FILES/icemodel/'
+    inputfolder = 'INPUT_FILES/others/'
+    planetfolder = 'INPUT_FILES/earthmodel/'
+    gridfolder = 'INPUT_FILES/others/'
+    outputfolder = 'OUTPUT_SLM/'
+    outputfolder_ice = 'ICELOAD_SLM/'
+    folder_coupled = ''
 
 /
 &file_format
-    config_ext =''
-    config_fType = 'text'
+    ext =''
+    fType = 'text'
 
 /
 &file_name
-    config_planetmodel   = 'prem_512.l60K2C.sum18p6.dum19p2.tz19p4.lm22'
-    config_icemodel      = 'iceload5g'
-    config_icemodel_out  = 'iceload_out_'
-    config_timearray     = 'times'
-    config_topomodel     = 'etopo2_512_AISbedmap2' 
-    config_topo_initial  = 'etopo2_512_AISbedmap2'    
-    config_grid_lat      = 'GLlat_512.txt'  
-    config_grid_lon      = 'GLlon_512.txt'
+    planetmodel   = 'prem_512.l60K2C.sum18p6.dum19p2.tz19p4.lm22'
+    icemodel      = 'iceload5g'
+    icemodel_out  = 'iceload_out_'
+    timearray     = 'times'
+    topomodel     = 'etopo2_512_AISbedmap2'
+    topo_initial  = 'etopo2_512_AISbedmap2'
+    grid_lat      = 'GLlat_512.txt'
+    grid_lon      = 'GLlon_512.txt'
 
 /
 &model_config
-    config_checkmarine = .false.
-    config_tpw = .true.
-    config_calcRG = .true.
-    config_input_times = .false.
-    config_initial_topo = .true.
-    config_iceVolume = .true.
-    config_coupling = .false. 
-    config_patch_ice = .false.
+    checkmarine = .false.
+    tpw = .true.
+    calcRG = .true.
+    input_times = .false.
+    initial_topo = .true.
+    iceVolume = .true.
+    coupling = .true.
+    patch_ice = .false.
 
 /
 &timewindow_config
-    config_L_sim = 20
-    config_dt1 = 5
-    config_dt2 = 10
-    config_dt3 = 10
-    config_dt4 = 10
-    config_Ldt1 = 20
-    config_Ldt2 = 0
-    config_Ldt3 = 0
-    config_Ldt4 = 0
+    L_sim = 20
+    dt1 = 5
+    dt2 = 10
+    dt3 = 10
+    dt4 = 10
+    Ldt1 = 20
+    Ldt2 = 0
+    Ldt3 = 0
+    Ldt4 = 0
 
 /
 &others
-    config_whichplanet = 'earth'
+    whichplanet = 'earth'
 
 
 /
