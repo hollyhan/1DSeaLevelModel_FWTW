@@ -60,18 +60,20 @@ module user_specs_mod
    ! 'folder_coupled' stores files that are exchanged between the ice (NHiceload) and sea level (bedrock) models. It is
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
+   integer, parameter :: str_len = 200
+
    ! Input directory
-   character(100) :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
-   character(100) :: inputfolder  = 'INPUT_FILES/others/'
-   character(100) :: planetfolder = 'INPUT_FILES/earthmodel/'   
-   character(100) :: gridfolder = 'INPUT_FILES/others/'   
+   character(str_len) :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
+   character(str_len) :: inputfolder  = 'INPUT_FILES/others/'
+   character(str_len) :: planetfolder = 'INPUT_FILES/earthmodel/'
+   character(str_len) :: gridfolder = 'INPUT_FILES/others/'
 	  
    ! Output directory
-   character(100) :: outputfolder = 'OUTPUT_SLM/' 
-   character(100) :: outputfolder_ice = 'ICELOAD_SLM/'
+   character(str_len) :: outputfolder = 'OUTPUT_SLM/'
+   character(str_len) :: outputfolder_ice = 'ICELOAD_SLM/'
 
    ! Other directory
-   character(100) :: folder_coupled = '' 
+   character(str_len) :: folder_coupled = ''
   
    ! Common file extensions============================================================================================!
    ! Since the code does not explicitly specify the precision (single or double) of the input/output files, an 
@@ -83,14 +85,14 @@ module user_specs_mod
    
    ! Various selection ================================================================================================!
    character(5)  :: whichplanet   = 'earth'                    ! e.g. 'earth', 'Mars', etc.
-   character(60) :: planetmodel   = 'prem_512.l60K2C.sum18p6.dum19p2.tz19p4.lm22' ! For now, this is generated from maxwell.f by JXM
-   character(20) :: icemodel      = 'iceload5g'       ! Common name of ice files in 'inputfolder_ice'
-   character(20) :: icemodel_out  = 'iceload_out_'       ! Name of ice files in 'outputfolder_ice'
-   character(4)  :: timearray     = 'times'                    ! Name of times array text file
-   character(40) :: topomodel     = 'etopo2_512_AISbedmap2'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka       
-   character(40) :: topo_initial  = 'etopo2_512_AISbedmap2'
-   character(20) :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
-   character(20) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
+   character(str_len) :: planetmodel   = 'prem_512.l60K2C.sum18p6.dum19p2.tz19p4.lm22' ! For now, this is generated from maxwell.f by JXM
+   character(str_len) :: icemodel      = 'AISload_Run85_0_0_'       ! Common name of ice files in 'inputfolder_ice'
+   character(str_len) :: icemodel_out  = 'iceload_out_'       ! Name of ice files in 'outputfolder_ice'
+   character(str_len) :: timearray     = 'times'                    ! Name of times array text file
+   character(str_len) :: topomodel     = 'etopo2_512_AISbedmap2'       ! Bedrock topography (NO ICE INCLUDED!!) at time = 0ka
+   character(str_len) :: topo_initial  = 'etopo2_512_AISbedmap2'
+   character(str_len) :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
+   character(str_len) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
    
    ! Model parameters==================================================================================================!
    integer, parameter :: norder = 512           ! Max spherical harmonic degree/order
