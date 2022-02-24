@@ -79,7 +79,10 @@ module sl_io_mod
 
       if(status /= nf90_noerr) then
          print *, trim(nf90_strerror(status))
-         stop "Stopped"
+         print *, "NetCDF I/O error occurred in the Sea Level Model."
+         print *, "Backtrace of calling routines:"
+         CALL BACKTRACE
+         stop "Stopping Sea Level Model."
       endif
 
    end subroutine check
@@ -136,6 +139,7 @@ module sl_io_mod
 
 
       ! Read in lat-lon grid files
+      write(*,*) 'open lat lon files'
       open(unit = 201, file = trim(gridfolder)//trim(grid_lat), form = 'formatted', &
       & access = 'sequential', status = 'old')
       read(201,*) latgrid

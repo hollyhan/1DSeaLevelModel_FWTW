@@ -20,14 +20,14 @@
 
 # gfortran
 FC = gfortran
-FFLAGS = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fconvert=big-endian
+FFLAGS = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fconvert=big-endian -ffpe-summary=none -g
 LDFLAGS = -O3 -m64
 
 
 CPP = cpp -P -traditional
 CPPFLAGS = 
 CPPINCLUDES = 
-INCLUDES = -I$(NETCDF)/include
+INCLUDES = -I$(NETCDF)/include -I.
 
 # Specify NetCDF libraries, checking if netcdff is required (it will be present in v4 of netCDF)
 LIBS = -L$(NETCDF)/lib
