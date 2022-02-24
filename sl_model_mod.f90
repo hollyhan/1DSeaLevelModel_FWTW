@@ -1298,12 +1298,12 @@ module sl_model_mod
        endif
 
       if (calcRG) then
-         call write_sl(rr(:,:,n), 'R', outputfolder, suffix=numstr)
+         call write_sl(rr(:,:,nfiles), 'R', outputfolder, suffix=numstr)
 
          ! Compute geoid displacement and write out
-         gg(:,:,n) = deltaslxy(:,:)+rr(:,:,n)
+         gg(:,:,nfiles) = deltaslxy(:,:)+rr(:,:,nfiles)
 
-         call write_sl(gg(:,:,n), 'G', outputfolder, suffix=numstr)
+         call write_sl(gg(:,:,nfiles), 'G', outputfolder, suffix=numstr)
        endif
 
       if (coupling) then
