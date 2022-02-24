@@ -61,6 +61,7 @@ module user_specs_mod
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
    integer, parameter :: str_len = 200
+   integer :: unit_num
 
    ! Input directory
    character(str_len) :: inputfolder_ice  = 'INPUT_FILES/icemodel/'
@@ -79,9 +80,10 @@ module user_specs_mod
    ! Since the code does not explicitly specify the precision (single or double) of the input/output files, an 
    !  extension could be used to designate the type. Alternatively, the files could also be delimited text files (to 
    !  be implemented later). Specify the common extension here (applicable to the names of ALL input/output files): 
-   character(4) :: ext = ''       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'binary'
+   character(4) :: ext = ''       ! '.sgl' | '.dbl' | '.txt' | '.nc' if fType == 'netcdf'
    ! ... and their file type:
-   character(6) :: fType = 'text'  ! 'binary' | 'text' | empty quote '' for both binary and text format
+   character(6) :: fType_in  = 'text'  ! 'netcdf' | 'text'
+   character(6) :: fType_out = 'text'  ! 'netcdf' | 'text' | 'both' for both netcdf and text format
    
    ! Various selection ================================================================================================!
    character(5)  :: whichplanet   = 'earth'                    ! e.g. 'earth', 'Mars', etc.

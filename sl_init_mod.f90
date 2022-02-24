@@ -65,7 +65,7 @@ end module planets_mod
 !=====================================================================================netCDF I/O mod===!
 module sl_io_mod
 !-------------------------------------------------------------------------------------------------------
-   use user_specs_mod, only: nglv, ext, fType, outputfolder, gridfolder, grid_lat, grid_lon
+   use user_specs_mod, only: nglv, ext, fType_in, fType_out, outputfolder, gridfolder, grid_lat, grid_lon, unit_num
    use netCDF
    implicit none
 
@@ -94,10 +94,13 @@ module sl_io_mod
       real, dimension(nglv,2*nglv), intent(inout) :: data_slm
       character (len = *), optional :: suffix, fext
 
-      if (fType == 'text') then
+      if (fType_in == 'text') then
          call read_txt(data_slm, filename, filepath, suffix, fext)
-      elseif (fType == 'binary') then
+      elseif (fType_in == 'netcdf') then
          call read_nf90(data_slm, filename, filepath, suffix, fext)
+      else
+         write(unit_num,*) "Error: fType_in should be one of 'netcdf' or 'text'"
+         stop
       endif
 
    end subroutine read_sl
@@ -109,10 +112,15 @@ module sl_io_mod
       real, dimension(nglv,2*nglv), intent(in) :: data_slm
       character (len = *), optional :: suffix, fext
 
-      if (fType == 'text') then
+      if ((fType_out == 'text') .or. (fType_out == 'both')) then
          call write_txt(data_slm, filename, filepath, suffix, fext)
-      elseif (fType == 'binary') then
-         call write_nf90(data_slm, filename, filepath, suffix, fext)
+      endif
+      if ((fType_out == 'netcdf') .or. (fType_out == 'both')) then
+         call write_nf90(data_slm, filename, filepath, suffix, fext='.nc')
+      endif
+      if ((fType_out /= 'netcdf') .and. (fType_out /= 'text') .and. (fType_out /= 'both')) then
+         write(unit_num,*) "Error: fType_out should be one of 'netcdf', 'text', or 'both'"
+         stop
       endif
 
    end subroutine write_sl
@@ -312,7 +320,7 @@ module sl_io_mod
    subroutine sl_readnl(inputfolder_ice, inputfolder, &
                         planetfolder, gridfolder, &
                         outputfolder, outputfolder_ice, &
-                        folder_coupled, ext, fType, &
+                        folder_coupled, ext, fType_in, fType_out, &
                         planetmodel, icemodel, icemodel_out, &
                         timearray, topomodel, topo_initial, &
                         grid_lat, grid_lon, checkmarine, &
@@ -331,7 +339,8 @@ module sl_io_mod
       character(*), intent(out) :: folder_coupled
 
       character(*), intent(out) :: ext
-      character(*), intent(out) :: fType
+      character(*), intent(out) :: fType_in
+      character(*), intent(out) :: fType_out
 
       character(*), intent(out) :: planetmodel
       character(*), intent(out) :: icemodel
@@ -368,7 +377,7 @@ module sl_io_mod
                               outputfolder, outputfolder_ice, &
                               folder_coupled
 
-      namelist /file_format/ ext, fType
+      namelist /file_format/ ext, fType_in, fType_out
 
       namelist   /file_name/ planetmodel, icemodel, icemodel_out, &
                            timearray, topomodel, topo_initial, &
