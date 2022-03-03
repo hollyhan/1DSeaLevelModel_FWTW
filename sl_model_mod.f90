@@ -113,7 +113,6 @@ module sl_model_mod
    integer :: counti, countf,countrate                         ! Computation timing
    real :: counti_cpu, countf_cpu
    type(sphere) :: spheredat                                   ! SH transform data to be passed to subroutines
-   integer :: unit_num
 
    ! For Jerry's code to read in Love numbers
    integer :: legord(norder),nmod(norder),nmodes(norder),ll,nm,np
@@ -161,7 +160,7 @@ module sl_model_mod
    subroutine sl_call_readnl
 
       call sl_readnl(inputfolder_ice, inputfolder, planetfolder, gridfolder, &
-                        outputfolder, outputfolder_ice, folder_coupled, ext, fType, &
+                        outputfolder, outputfolder_ice, folder_coupled, ext, fType_in, fType_out, &
                         planetmodel, icemodel, icemodel_out, timearray, &
                         topomodel, topo_initial, grid_lat, grid_lon, &
                         checkmarine, tpw, calcRG, input_times, &
