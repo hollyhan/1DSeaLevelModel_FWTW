@@ -1,12 +1,13 @@
 !=======================================================================================================MAIN MODULE=====!
 !_______________________________________________________________________________________________________________________!
 module sl_model_mod
+
    use spharmt
    use user_specs_mod
    use planets_mod
    use sl_io_mod
-   implicit none
 
+   implicit none
    private
 
    public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, &
@@ -173,6 +174,7 @@ module sl_model_mod
 
    !=======================================================================================================================!
    subroutine sl_timewindow(iter) !create a time window that points to which ice history to read in
+
       integer :: iter
 
       ! save internal timestep profiles to a big array 'int_dt'
@@ -371,6 +373,7 @@ module sl_model_mod
 
    !=======================================================================================================================!
    subroutine sl_solver_checkpoint(itersl, dtime)
+
       integer :: itersl, dtime
 
       if (dtime /= dt1) then
@@ -388,7 +391,7 @@ module sl_model_mod
           stop
       endif
 
-      if (coupling) then ! <<<HH: can delete this
+      if (coupling) then ! Set a default unit number for I/O
          write(unit_num,*) 'Sea level model is coupled to the ice sheet model. Unit number is:', unit_num
       else
          call sl_set_unit_num(6)! Set a default unit number for I/O
@@ -406,13 +409,11 @@ module sl_model_mod
 
 
    !=======================================================================================================================
-   subroutine sl_solver_init(itersl, starttime, mali_iceload, mali_bedrock, mali_mask) !HH: add in an optional argument for bedrock and ice thickness for coupling to MALI
+   subroutine sl_solver_init(itersl, starttime, mali_iceload, mali_bedrock, mali_mask)
 
-!HH: declare the variable ism_bedrock (formerly nh_bedrock) here? maybe not..
       integer :: itersl
       real :: starttime
-      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_bedrock, mali_mask  !HH: bedrock provided by ISM in coupled simulation: include intent(in) later when they are actually provided by MALI .
-
+      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_bedrock, mali_mask
 
       !================================================================================================
       !       Initialize the model at times(1) when there has been no melting episodes yet  NMELT = 0
@@ -430,6 +431,7 @@ module sl_model_mod
       !     write(numstr2,'(I6)') k
       !     write(unit_num,'(A,I6)') 'initial icefile suffix:', k
       !     numstr2 = trim(adjustl(numstr2))
+
       !====================== topography and ice load========================
       ! read in the initial iceload from the coupled ice input folder
       call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
@@ -468,10 +470,7 @@ module sl_model_mod
        endif
 
        if (coupling) then  !if coupling the ICE SHEET - SEA LEVEL MODELs
-
-          !HH: add a check that if 'mali_iceload' or 'mali_bedrock' are not provided, print out an error?
-
-          write(unit_num,*) 'Merge initial topography and iceload with the ISM data' !HH: change
+          write(unit_num,*) 'Merge initial topography and iceload with the ISM data'
 
           ! merge intitial topography with bedrock provided by the ice sheet model.
           do j = 1,2*nglv
@@ -610,12 +609,12 @@ module sl_model_mod
          close(201)
       endif
 
-      !HH: print out the number of iteration it takes for the inner convergence
+      !print out the number of iteration it takes for the inner convergence
       open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
       & status = 'replace')
       close(201)
 
-      !HH: print out the nmelt
+      !print out the number of melting episodes taken into account at the current timestep (i.e., nfiles-1)
       open(unit = 201, file = trim(outputfolder)//'nmelt', form = 'formatted', access ='sequential', &
       & status = 'replace')
       close(201)
@@ -627,11 +626,11 @@ module sl_model_mod
    !========================================================================================================================
    subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, mali_mask, slchange)
       ! Compute sea-level change associated with past ice loading changes
-      !if (nmelt.GT.0) then
-      real :: starttime                                       ! start time of the simulation
+
+      real :: starttime
       integer :: iter, itersl, dtime
-      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask !HH: optional for coupled ism-slm case
-      real, dimension(nglv,2*nglv), intent(out), optional :: slchange
+      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask ! variables for coupled ISM-SLM simulations
+      real, dimension(nglv,2*nglv), intent(out), optional :: slchange ! variable exchanged with the ISM
 
       !===========================================================
       !                   BEGIN TIMING & EXECUTION
@@ -644,11 +643,11 @@ module sl_model_mod
       ! Ice files
          do n = 1, nfiles-1
             j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array
-            write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
+            !write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
             write(numstr,'(I6)') j
 
             k = -1 * starttime - j * dt1
-            write(unit_num,'(A,I7)') 'ice load, year (ago):',k !HH: change (ago) to 'relative to present'
+            !write(unit_num,'(A,I7)') 'ice load, year (ago):',k ! year 'relative to present'
             numstr = trim(adjustl(numstr))
 
            ! read in ice files (upto the previous time step) from the sea-level model folder
@@ -657,7 +656,7 @@ module sl_model_mod
          enddo
 
          j = TIMEWINDOW(nfiles) ! icefile number to read in from the TW array
-         write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
+         !write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
          write(numstr,'(I6)') j
          numstr = trim(adjustl(numstr))
 

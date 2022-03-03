@@ -16,8 +16,8 @@
 /
 &file_format
     ext =''
-     fType_in = 'text'
-     fType_out = 'both'
+    fType_in = 'text'
+    fType_out = 'both'
 
 /
 &file_name

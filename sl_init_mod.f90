@@ -147,7 +147,6 @@ module sl_io_mod
 
 
       ! Read in lat-lon grid files
-      write(*,*) 'open lat lon files'
       open(unit = 201, file = trim(gridfolder)//trim(grid_lat), form = 'formatted', &
       & access = 'sequential', status = 'old')
       read(201,*) latgrid
