@@ -192,7 +192,7 @@ module sl_model_mod
 
       if (sum(Ldt) > L_sim) then
           write(unit_num,*) 'Total length of simulation CANNOT be smaller than the total lengths of the internal time windows!!'
-          write(unit_num,*) 'Make sure the sum(LdT) < L_sim !!'
+          write(unit_num,*) 'Make sure the sum(LdT) ≤ L_sim !!'
           write(unit_num,*) 'Terminating: program sl_model'
           stop
       endif
@@ -640,39 +640,47 @@ module sl_model_mod
 
       if (coupling) then
 
-      ! Ice files
-         do n = 1, nfiles-1
-            j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array
-            !write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
-            write(numstr,'(I6)') j
+         if (iter*dtime .GT. L_sim) then
+            write(unit_num,*) 'ERROR: The current SLM simulation time exceeds the prescribed simulation length'
+            write(unit_num,*) 'Current simulation time (in yr) is: ', iter*dtime
+            write(unit_num,*) 'Prescribed simulation length (in yr) is: ', L_sim
+            write(unit_num,*) 'Check the variable L_sim in namelist.sealevel file.'
+            write(unit_num,*) 'Terminating the program.'
+            stop
+         else
+            ! Ice files
+            do n = 1, nfiles-1
+               j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array
+               !write(unit_num,'(A,I6)') 'ice file read in from the SLM output folder, file number:', j
+               write(numstr,'(I6)') j
 
-            k = -1 * starttime - j * dt1
-            !write(unit_num,'(A,I7)') 'ice load, year (ago):',k ! year 'relative to present'
+               k = -1 * starttime - j * dt1
+               !write(unit_num,'(A,I7)') 'ice load, year (ago):',k ! year 'relative to present'
+               numstr = trim(adjustl(numstr))
+
+              ! read in ice files (upto the previous time step) from the sea-level model folder
+              call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
+
+            enddo
+
+            j = TIMEWINDOW(nfiles) ! icefile number to read in from the TW array
+            !write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
+            write(numstr,'(I6)') j
             numstr = trim(adjustl(numstr))
 
-           ! read in ice files (upto the previous time step) from the sea-level model folder
-           call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
+            ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
+            call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
 
-         enddo
-
-         j = TIMEWINDOW(nfiles) ! icefile number to read in from the TW array
-         !write(unit_num,'(A,I6)') 'ice file read in from the coupled input ice folder,  file number,:', j
-         write(numstr,'(I6)') j
-         numstr = trim(adjustl(numstr))
-
-         ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
-         call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
-
-         ! ice thickness at the current time step inside the ISM domain is provided by the ISM
-         ! merge iceload configuration
-         do j = 1,2*nglv
-            do i = 1,nglv
-               icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
+            ! ice thickness at the current time step inside the ISM domain is provided by the ISM
+            ! merge iceload configuration
+            do j = 1,2*nglv
+               do i = 1,nglv
+                  icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
+               enddo
             enddo
-         enddo
+         endif
 
       else ! if not coupling
-
          ! if sea level model is not coupled to an ice sheet model, read in iceloads from the folder inputfolder_ice
          do n = 1, nfiles
             j = TIMEWINDOW(n) ! icefile numbers to read in from the TW array
