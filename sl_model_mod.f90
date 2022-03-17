@@ -1222,7 +1222,7 @@ module sl_model_mod
          endif
          rrlm(0:2,0:2) = rrlm(0:2,0:2) + rr_rot(0:2,0:2)
          call spec2spat(rrxy, rrlm, spheredat)
-         rr(:,:,n) = rrxy(:,:)
+         rr(:,:,nfiles) = rrxy(:,:)
       endif
 
 
