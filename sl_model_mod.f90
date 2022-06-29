@@ -886,12 +886,18 @@ module sl_model_mod
       write(unit_num,'(A,EN15.4E2,A)') '                     ',times(nfiles),' years'
 
       ! Decompose initial topography (STEP 2) (used to check convergence of outer loop)
+      write(unit_num,'(A)') '!!! Calling spat2spec on initial topo !!!'
+      flush(unit_num)
       call spat2spec(tinit(:,:), t0lm, spheredat)
+      write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
+      flush(unit_num)
 
       !=====================================================================================
       !                   1. BEGIN ICE PART
       !=====================================================================================
 
+      write(unit_num,'(A)') '======SLM Starting Ice Part '
+      flush(unit_num)
       ! Read in ice loads and compute the difference in iceload over each time interval
       do n=1, nfiles
          ! Calculate icestar (STEP 3) (eq.43)
@@ -911,9 +917,17 @@ module sl_model_mod
                enddo
             enddo
             ! Decompose ice field
+            write(unit_num,'(A)') '!!! Calling spat2spec on ice field !!!'
+            flush(unit_num)
             call spat2spec(icestarxy(:,:),icestarlm(:,:),spheredat)
+            write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
+            flush(unit_num)
          else ! If not checking for floating ice
+            write(unit_num,'(A)') '!!! Calling spat2spec on ice field, not checking floating ice!!!'
+            flush(unit_num)
             call spat2spec(icexy(:,:,n),icestarlm(:,:),spheredat) ! Decompose ice field
+            write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
+            flush(unit_num)
          endif
 
          if (n == 1) then
@@ -933,6 +947,8 @@ module sl_model_mod
       !                            BEGIN OCEAN PART
       !========================================================================================
 
+      write(unit_num,'(A)') '======SLM Starting Ocean Part '
+      flush(unit_num)
       ! Calculate beta (STEP 3) (eq. 44)
       ! Calculate current beta based on iceload at the current timestep
       do j = 1, 2 * nglv
@@ -949,11 +965,19 @@ module sl_model_mod
       cstar0(:,:)  = cxy0(:,:) * beta0(:,:)
       cstarxy(:,:) = cxy(:,:) * beta(:,:)  ! First guess to the O.F using converged O.F the preivous timestep
 
+      write(unit_num,'(A)') '!!! Calling spat2spec on cstar !!!'
+      flush(unit_num)
       call spat2spec(cstarxy,cstarlm,spheredat) ! Decompose the current cstar
+      write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
+      flush(unit_num)
 
       ! Calculate the first guess to topography correction
       tOxy(:,:) = tinit(:,:) * (cstarxy(:,:) - cstar0(:,:)) ! (eq. 70)
+      write(unit_num,'(A)') '!!! Calling spat2spec on topo correction !!!'
+      flush(unit_num)
       call spat2spec(tOxy, tOlm, spheredat) ! Decompose the topo correction term
+      write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
+      flush(unit_num)
 
 
       dS(:,:,1) = deltaS(:,:,1)
@@ -978,6 +1002,8 @@ module sl_model_mod
       !----------------------------------------------------------------------------------------
       ninner = 1
       do ! Inner loop
+         write(unit_num,'(A,I4)') '======SLM Inner Loop #: ', ninner
+         flush(unit_num)
 
          !-----\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/    Rotation    \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/----!
 
@@ -1018,6 +1044,8 @@ module sl_model_mod
 
             dm(:,nfiles) = mm(:) - oldm(:)
 
+         write(unit_num,'(A)') '!!! calculate lambda !!!'
+         flush(unit_num)
             ! Calculate lambda (rotational driving) from m (Milne and Mitrovica 1998)
             lambda(0,0) = (radius**2 * omega**2 / 3.0) * ((mm(1)**2 + mm(2)**2 + mm(3)**2) + 2.0 * mm(3))
             lambda(2,0) = (radius**2 * omega**2 / (6.0 * sqrt(5.0))) &
@@ -1046,6 +1074,8 @@ module sl_model_mod
                dsl_rot(2,m) = (ekhTE * (deltalambda(2,m,nfiles-1) + dlambda(2,m,nfiles)) + viscoustt) / gacc ! (eq. B28/B25)
             enddo
 
+         write(unit_num,'(A)') '!!! calcRG !!!'
+         flush(unit_num)
             if (calcRG) then ! For R calculations
                rr_rot(:,:) = (0.0,0.0)
                do nn = 1,nfiles-1 ! Sum over all previous timesteps
@@ -1070,6 +1100,8 @@ module sl_model_mod
             rr_rot(:,:) = (0.0,0.0)
          endif ! TPW
 
+         write(unit_num,'(A)') '!!! End rotation !!!'
+         flush(unit_num)
          !-----/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\    End Rotation    /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\----!
 
          ! Calculate beta (eq. B14) - viscous response factor
@@ -1096,6 +1128,8 @@ module sl_model_mod
             enddo
          endif
 
+         write(unit_num,'(A)') '!!! Compute viscous !!!'
+         flush(unit_num)
          ! Compute viscous response outside inner loop, since it doesn't depend on current timestep
          viscous(:,:) = (0.0,0.0)
          do l = 1,norder
@@ -1106,6 +1140,8 @@ module sl_model_mod
             enddo
          enddo
 
+         write(unit_num,'(A)') '!!! STEP 6 !!!'
+         flush(unit_num)
          ! Calculate change in sea level from change in load (STEP 6)
          dsllm(:,:) = (0.0,0.0) ! No change on first timestep
          do l = 1,norder
@@ -1118,15 +1154,25 @@ module sl_model_mod
             enddo
          enddo
 
+         write(unit_num,'(A)') '!!! Add rotational effects !!!'
+         flush(unit_num)
          ! Add rotational effects (calculated above)
          dsllm(0:2,0:2) = dsllm(0:2,0:2) + dsl_rot(0:2,0:2)
 
          ! Convert dSL (total spatially heterogeneous change since time0) to spatial domain
+         write(unit_num,'(A)') '!!! Calling spat2spec on dSL!!!'
+         flush(unit_num)
          call spec2spat(dslxy, dsllm, spheredat)
+         write(unit_num,'(A)') '!!! Returned from spat2spec !!!'
+         flush(unit_num)
 
          ! Compute r0 (STEP 7)
          rOxy(:,:) = dslxy(:,:) * cstarxy(:,:) ! (eq. 68)
+         write(unit_num,'(A)') '!!! Calling spat2spec !!!'
+         flush(unit_num)
          call spat2spec(rOxy, rOlm, spheredat) ! Decompose r0
+         write(unit_num,'(A)') '!!! Returned from spat2spec !!!'
+         flush(unit_num)
 
          ! Compute conservation term (STEP 8)
          conserv = (1 / cstarlm(0,0)) * (-1.0 * (rhoi / rhow) * deltaicestar(0,0,nfiles) - rOlm(0,0) + tOlm(0,0)) ! (eq. 78)
@@ -1140,7 +1186,11 @@ module sl_model_mod
           ! Update the total sea-level change up to the current time step
          deltasllm(:,:) = dsllm(:,:) ! Spatially heterogeneous component
          deltasllm(0,0) = deltasllm(0,0) + conserv ! Add uniform conservation term to (0,0)
+         write(unit_num,'(A)') '!!! Calling spec2spat !!!'
+         flush(unit_num)
          call spec2spat(deltaslxy, deltasllm, spheredat) ! Synthesize deltasl
+         write(unit_num,'(A)') '!!! Returned from spec2spat !!!'
+         flush(unit_num)
 
          ! Calculate convergence criterion for inner loop
          if ( abs(sum(abs(dSlm)) - sum(abs(olddSlm))) < epsilon(0.0) .and. abs(sum(abs(olddSlm))) < epsilon(0.0)) then
@@ -1169,13 +1219,23 @@ module sl_model_mod
 
             !new guess to ocean*beta function
             cstarxy(:,:) = cxy(:,:) * beta(:,:) ! (eq. 65)
+            write(unit_num,'(A)') '!!! Calling spat2spec for cstar !!!'
+            flush(unit_num)
             call spat2spec(cstarxy, cstarlm, spheredat) ! Decompose cstar
+            write(unit_num,'(A)') '!!! Returned from spat2spec for cstar!!!'
+            flush(unit_num)
 
             ! new guess to the topo correction
             tOxy(:,:) = tinit * (cstarxy(:,:) - cstar0(:,:)) ! (eq. 70)
+            write(unit_num,'(A)') '!!! Calling spec2spat topo corr !!!'
+            flush(unit_num)
             call spat2spec(tOxy, tOlm, spheredat) ! Decompose tO
+            write(unit_num,'(A)') '!!! Returned from spec2spat topo corr !!!'
+            flush(unit_num)
          endif
 
+         write(unit_num,'(A,ES15.3)') 'Inner loop iteration complete, xi=', xi
+         flush(unit_num)
          if (xi <= epsilon1) then ! If converged
             exit
          elseif (ninner == 9999) then ! If no convergence after a huge number of iterations
