@@ -443,8 +443,6 @@ module sl_model_mod
       write(unit_num,*) 'nmelt=0, INITIALIZING THE SEA LEVEL MODEL..'
       flush(unit_num)
 
-      write(unit_num,*) "shape(t0lm),size,  norder", shape(t0lm), size(t0lm), norder
-
       !initialize variables
       j = TIMEWINDOW(1) ! initial file number (i.e. 0)
       write(unit_num,'(A,I4)') 'initial file number:', j
@@ -620,13 +618,8 @@ module sl_model_mod
             enddo
                   ! Decompose ice field
             call spat2spec(icestarxy(:,:),icestarlm(:,:),spheredat)
-      write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(icestarlm)
          else ! If not checking for floating ice
             call spat2spec(icexy(:,:,1),icestarlm(:,:),spheredat) ! Decompose ice field
-      write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(icestarlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(icestarlm), maxval(icestarlm)
          endif
 
          ice_volume = icestarlm(0,0)*4*pi*radius**2
@@ -918,8 +911,6 @@ module sl_model_mod
       flush(unit_num)
       call spat2spec(tinit(:,:), t0lm, spheredat)
       write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(t0lm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(t0lm), maxval(t0lm)
       flush(unit_num)
 
       !=====================================================================================
@@ -951,16 +942,12 @@ module sl_model_mod
             flush(unit_num)
             call spat2spec(icestarxy(:,:),icestarlm(:,:),spheredat)
             write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(icestarlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(icestarlm), maxval(icestarlm)
             flush(unit_num)
          else ! If not checking for floating ice
             write(unit_num,'(A)') '!!! Calling spat2spec on ice field, not checking floating ice!!!'
             flush(unit_num)
             call spat2spec(icexy(:,:,n),icestarlm(:,:),spheredat) ! Decompose ice field
             write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(icestarlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(icestarlm), maxval(icestarlm)
             flush(unit_num)
          endif
 
@@ -1002,9 +989,7 @@ module sl_model_mod
       write(unit_num,'(A)') '!!! Calling spat2spec on cstar !!!'
       flush(unit_num)
       call spat2spec(cstarxy,cstarlm,spheredat) ! Decompose the current cstar
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(cstarlm), maxval(cstarlm)
       write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(cstarlm)
       flush(unit_num)
 
       ! Calculate the first guess to topography correction
@@ -1013,8 +998,6 @@ module sl_model_mod
       flush(unit_num)
       call spat2spec(tOxy, tOlm, spheredat) ! Decompose the topo correction term
       write(unit_num,'(A)') '!!! returned from  spat2spec !!!'
-      call checkout(tOlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(tOlm), maxval(tOlm)
       flush(unit_num)
 
 
@@ -1056,8 +1039,6 @@ module sl_model_mod
 
             dil(:,:,nfiles) = il(:,:) - oldil(:,:)
 
-         write(unit_num,'(A)') '!!! calculate m !!!'
-         flush(unit_num)
             ! Calculate m (rotation vector perturbation)
             !  - From Jerry's written notes, also Mitrovica, Wahr, Matsuyama, and Paulson (2005) eq. 2
             sum_il(:,:) = 0.0
@@ -1075,8 +1056,6 @@ module sl_model_mod
                sum_m(:) = sum_m(:) + dm(:,nn) * betattprime
             enddo
 
-         write(unit_num,'(A)') '!!! calculate m complete !!!'
-         flush(unit_num)
             do i = 1,2
                mm(i) = (1 / (1 - kTE(2) / kf)) * &
                      & ( (1 / (moiC - moiA)) * ((1 + kE(2)) * il(i,3) + sum_il(i,3)) + (1 / kf) * sum_m(i) )
@@ -1087,7 +1066,6 @@ module sl_model_mod
             dm(:,nfiles) = mm(:) - oldm(:)
 
          write(unit_num,'(A)') '!!! calculate lambda !!!'
-         call checkout3(deltalambda)
          flush(unit_num)
             ! Calculate lambda (rotational driving) from m (Milne and Mitrovica 1998)
             lambda(0,0) = (radius**2 * omega**2 / 3.0) * ((mm(1)**2 + mm(2)**2 + mm(3)**2) + 2.0 * mm(3))
@@ -1095,13 +1073,9 @@ module sl_model_mod
                         & * (mm(1)**2 + mm(2)**2 - 2.0 * mm(3)**2 - 4.0 * mm(3))
             lambda(2,1) = (radius**2 * omega**2 / sqrt(30.0)) * ((mm(1) - ii * mm(2)) * (1.0 + mm(3)))
             lambda(2,2) = (radius**2 * omega**2 / sqrt(5.0 * 24.0)) * (mm(2)**2 - mm(1)**2 + 2.0 * ii * mm(1) * mm(2))
-    call checkout(lambda)
-         call checkout3(dlambda)
-         flush(unit_num)
+
             dlambda(:,:,nfiles) = lambda(:,:) - deltalambda(:,:,nfiles-1)
 
-         write(unit_num,'(A)') '!!! calculate Kendall !!!'
-         flush(unit_num)
             ! Calculate effect on sea level (Love numbers) (Kendall)
             dsl_rot(:,:) = (0.0,0.0)
             ekhTE = 1 + kTE(2) - hTE(2)
@@ -1113,8 +1087,6 @@ module sl_model_mod
                enddo
             enddo
 
-         write(unit_num,'(A)') '!!! calculate dsl_rot !!!'
-         flush(unit_num)
             do m = 0,2
                viscoustt = (0.0,0.0)
                do nn = 1,nfiles-1 ! Sum the loads over all previous timesteps to get the sum on the 4th line of eq. B28
@@ -1178,10 +1150,6 @@ module sl_model_mod
          endif
 
          write(unit_num,'(A)') '!!! Compute viscous !!!'
-         call checkout(viscous)
-         call checkoutr(lovebeta)
-         call checkout3(dicestar)
-         call checkout3(dS)
          flush(unit_num)
          ! Compute viscous response outside inner loop, since it doesn't depend on current timestep
          viscous(:,:) = (0.0,0.0)
@@ -1217,8 +1185,6 @@ module sl_model_mod
          flush(unit_num)
          call spec2spat(dslxy, dsllm, spheredat)
          write(unit_num,'(A)') '!!! Returned from spat2spec !!!'
-      call checkout(dsllm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(dsllm), maxval(dsllm)
          flush(unit_num)
 
          ! Compute r0 (STEP 7)
@@ -1227,8 +1193,6 @@ module sl_model_mod
          flush(unit_num)
          call spat2spec(rOxy, rOlm, spheredat) ! Decompose r0
          write(unit_num,'(A)') '!!! Returned from spat2spec !!!'
-      call checkout(rOlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(rOlm), maxval(rOlm)
          flush(unit_num)
 
          ! Compute conservation term (STEP 8)
@@ -1247,7 +1211,6 @@ module sl_model_mod
          flush(unit_num)
          call spec2spat(deltaslxy, deltasllm, spheredat) ! Synthesize deltasl
          write(unit_num,'(A)') '!!! Returned from spec2spat !!!'
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(deltasllm), maxval(deltasllm)
          flush(unit_num)
 
          ! Calculate convergence criterion for inner loop
@@ -1281,8 +1244,6 @@ module sl_model_mod
             flush(unit_num)
             call spat2spec(cstarxy, cstarlm, spheredat) ! Decompose cstar
             write(unit_num,'(A)') '!!! Returned from spat2spec for cstar!!!'
-      call checkout(cstarlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(cstarlm), maxval(cstarlm)
             flush(unit_num)
 
             ! new guess to the topo correction
@@ -1291,8 +1252,6 @@ module sl_model_mod
             flush(unit_num)
             call spat2spec(tOxy, tOlm, spheredat) ! Decompose tO
             write(unit_num,'(A)') '!!! Returned from spec2spat topo corr !!!'
-      call checkout(tOlm)
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(tOlm), maxval(tOlm)
             flush(unit_num)
          endif
 
@@ -1352,8 +1311,6 @@ module sl_model_mod
          endif
          rrlm(0:2,0:2) = rrlm(0:2,0:2) + rr_rot(0:2,0:2)
          call spec2spat(rrxy, rrlm, spheredat)
-            write(unit_num,'(A)') '!!! Returned from spec2spat 1314 !!'
-!            write(unit_num,'(A,ES15.3, ES15.3)') ' Return min/max: ', minval(rrlm), maxval(rrlm)
          rr(:,:,nfiles) = rrxy(:,:)
       endif
 
@@ -1474,17 +1431,6 @@ module sl_model_mod
 
 !----------------------------------------------------------------------------------------------------------------------!
 
-   subroutine checkOutR(i)
-      real,dimension(:,:), intent(in) :: i
-      write(unit_num,'(A,ES15.3, ES15.3,ES15.3, ES15.3)') ' Return min/max, real/imag: ', minval(real(i)), maxval(real(i))
-   end subroutine
-   subroutine checkOut(i)
-      complex,dimension(:,:), intent(in) :: i
-      write(unit_num,'(A,ES15.3, ES15.3,ES15.3, ES15.3)') ' Return min/max, real/imag: ', minval(real(i)), maxval(real(i)), minval(AIMAG(i)), maxval(AIMAG(i))
-   end subroutine
-   subroutine checkOut3(i)
-      complex,dimension(:,:,:), intent(in) :: i
-      write(unit_num,'(A,ES15.3, ES15.3,ES15.3, ES15.3)') ' Return min/max, real/imag: ', minval(real(i)), maxval(real(i)), minval(AIMAG(i)), maxval(AIMAG(i))
-   end subroutine
+
 
 end module sl_model_mod
