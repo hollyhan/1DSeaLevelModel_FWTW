@@ -1663,8 +1663,8 @@ module spharmt
 
  subroutine vpassm (a,b,c,d,trigs,inc1,inc2,inc3,inc4,lot,n,ifac,la)
     integer, intent(in)  :: inc1, inc2, inc3, inc4, lot, n, ifac, la
-    real,    intent(in)  :: a(n),b(n),trigs(n)
-    real,    intent(out) :: c(n),d(n)
+    real,    intent(in)  :: a(n*(2*n+2)),b(n*(2*n+2)),trigs(n*(2*n+2))
+    real,    intent(out) :: c(n*(2*n+2)),d(n*(2*n+2))
 !
 !     subroutine "vpassm" - multiple version of "vpassa"
 !     performs one pass through data

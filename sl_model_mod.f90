@@ -232,7 +232,11 @@ module sl_model_mod
 
       ! allocate dimensions to arrays
       allocate (mask(ncalls+1),iceload(ncalls+1),icefiles(ncalls+1))
+      mask(:) = 0
+      iceload(:) = 0
+      icefiles(:) = 0
       allocate (TIMEWINDOW(TW_nfiles))
+      TIMEWINDOW(:)=0
 
       ! Initialize and grow the time window when t>0 but Travel == 0
       ! initialize the mask array and icefile numbers for the timewindow
@@ -327,6 +331,23 @@ module sl_model_mod
       allocate (dil(3,3,nfiles), dlambda(0:2,0:2,TW_nfiles),deltalambda(0:2,0:2,nfiles))
       allocate (dm(3,nfiles))
 
+      times = 0.0
+      lovebetatt = 0.0
+      lovebetattrr = 0.0
+      lovebetarr = 0.0
+      lovebeta = 0.0
+      icexy = 0.0
+      sl = 0.0
+      dS = 0.0
+      deltaS = 0.0
+      dicestar = 0.0
+      deltaicestar = 0.0
+      rr = 0.0
+      gg = 0.0
+      dil = 0.0
+      dlambda = 0.0
+      deltalambda = 0.0
+      dm = 0.0
 
       !!!!!!!!!!!!!!!!!!!ATTENTION!!!!!!!!
       ! TIMEWINDOW = TIMEWINDOW+1

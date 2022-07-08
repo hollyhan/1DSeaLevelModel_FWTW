@@ -65,7 +65,7 @@ end module planets_mod
 !=====================================================================================netCDF I/O mod===!
 module sl_io_mod
 !-------------------------------------------------------------------------------------------------------
-   use user_specs_mod, only: nglv, ext, fType_in, fType_out, outputfolder, gridfolder, grid_lat, grid_lon, unit_num
+   use user_specs_mod, only: nglv, ext, fType_in, fType_out, outputfolder, gridfolder, grid_lat, grid_lon, unit_num, str_len
    use netCDF
    implicit none
 
@@ -81,7 +81,7 @@ module sl_io_mod
          print *, trim(nf90_strerror(status))
          print *, "NetCDF I/O error occurred in the Sea Level Model."
          print *, "Backtrace of calling routines:"
-         CALL BACKTRACE
+         !CALL BACKTRACE
          stop "Stopping Sea Level Model."
       endif
 
@@ -329,26 +329,26 @@ module sl_io_mod
                         dt3, dt4, Ldt1, Ldt2, &
                         Ldt3, Ldt4, whichplanet)
 
-      character(*), intent(out) :: inputfolder_ice
-      character(*), intent(out) :: inputfolder
-      character(*), intent(out) :: planetfolder
-      character(*), intent(out) :: gridfolder
-      character(*), intent(out) :: outputfolder
-      character(*), intent(out) :: outputfolder_ice
-      character(*), intent(out) :: folder_coupled
+      character(str_len), intent(out) :: inputfolder_ice
+      character(str_len), intent(out) :: inputfolder
+      character(str_len), intent(out) :: planetfolder
+      character(str_len), intent(out) :: gridfolder
+      character(str_len), intent(out) :: outputfolder
+      character(str_len), intent(out) :: outputfolder_ice
+      character(str_len), intent(out) :: folder_coupled
 
-      character(*), intent(out) :: ext
-      character(*), intent(out) :: fType_in
-      character(*), intent(out) :: fType_out
+      character(4), intent(out) :: ext
+      character(6), intent(out) :: fType_in
+      character(6), intent(out) :: fType_out
 
-      character(*), intent(out) :: planetmodel
-      character(*), intent(out) :: icemodel
-      character(*), intent(out) :: icemodel_out
-      character(*), intent(out) :: timearray
-      character(*), intent(out) :: topomodel
-      character(*), intent(out) :: topo_initial
-      character(*), intent(out) :: grid_lat
-      character(*), intent(out) :: grid_lon
+      character(str_len), intent(out) :: planetmodel
+      character(str_len), intent(out) :: icemodel
+      character(str_len), intent(out) :: icemodel_out
+      character(str_len), intent(out) :: timearray
+      character(str_len), intent(out) :: topomodel
+      character(str_len), intent(out) :: topo_initial
+      character(str_len), intent(out) :: grid_lat
+      character(str_len), intent(out) :: grid_lon
 
       logical, intent(out)  :: checkmarine
       logical, intent(out)  :: tpw
@@ -369,7 +369,7 @@ module sl_io_mod
       integer, intent(out)  :: Ldt3
       integer, intent(out)  :: Ldt4
 
-      character(*), intent(out) :: whichplanet
+      character(5), intent(out) :: whichplanet
 
       namelist /io_directory/ inputfolder_ice, inputfolder, &
                               planetfolder, gridfolder, &
