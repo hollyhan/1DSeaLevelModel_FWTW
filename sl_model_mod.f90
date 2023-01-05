@@ -90,7 +90,7 @@ module sl_model_mod
    real :: ttl, ekhl                                        ! Used in Love number calculations
    complex, dimension(0:norder,0:norder) :: viscous         ! Used in Love number calculations
    real :: xi, zeta                                         ! Convergence checks
-   real :: ice_volume                                       ! ice volume
+   real :: ice_volume, mean_slc                             ! ice volume and mean sea level change
    ! For calculating R and G separately
    real, dimension(nglv,2*nglv) :: rrxy, drrxy_computed
    complex, dimension(0:norder,0:norder) :: rrlm, dgglm, drrlm_computed
@@ -627,6 +627,13 @@ module sl_model_mod
          open(unit = 201, file = trim(outputfolder)//'ice_volume', form = 'formatted', access ='sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') ice_volume
+         close(201)
+
+         mean_slc = 0.0
+         ! for mean sea level directly calculated based on the deltasl variable
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
          close(201)
       endif
 
@@ -1303,14 +1310,6 @@ module sl_model_mod
       write(201,'(ES14.7E2)') deltaS(:,:,nfiles)
       close(201)
 
-      if (iceVolume) then
-         ice_volume = icestarlm(0,0)*4*pi*radius**2 !multiply the (0,0) component of ice to the area of a sphere
-         open(unit = 201, file = trim(outputfolder)//'ice_volume', form = 'formatted', access = 'sequential', &
-         & status = 'old', position = 'append')
-         write(201,'(ES14.4E2)') ice_volume
-         close(201)
-      endif
-
       current_time = iter * dt1     !time passed since the start of the simulation
       if (current_time == L_sim) then !if we are at the last time step of simulation
          write(iterstr,'(I2)') itersl
@@ -1331,7 +1330,22 @@ module sl_model_mod
          gg(:,:,nfiles) = deltaslxy(:,:)+rr(:,:,nfiles)
 
          call write_sl(gg(:,:,nfiles), 'G', outputfolder, suffix=numstr)
-       endif
+      endif
+
+      if (iceVolume) then
+         ice_volume = icestarlm(0,0)*4*pi*radius**2 !multiply the (0,0) component of ice to the area of a sphere
+         open(unit = 201, file = trim(outputfolder)//'ice_volume', form = 'formatted', access = 'sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') ice_volume
+         close(201)
+
+         ! calculate the mean SLC
+         mean_slc = deltasllm(0,0)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+      endif
 
       if (coupling) then
          ! topography change between the previous and the current timestep
