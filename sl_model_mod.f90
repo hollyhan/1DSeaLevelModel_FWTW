@@ -136,7 +136,11 @@ module sl_model_mod
    character(16) :: carg(20)                               ! Arguments from a bash script
    character(3) :: skip                                    ! variable used to skip lines in reading TPW file
 
-
+   !HH variables for debugging
+   real, dimension(nglv,2*nglv) :: deltaslxy_outside_maliMesh, deltaslxy_inside_maliMesh
+   complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh
+   real, dimension(nglv,2*nglv) :: mask_maliMesh
+   real :: mean_slc_outside_maliMesh, mean_slc_inside_maliMesh, mean_slc_sum
    contains
 
    !======================================================================================================================!
@@ -509,7 +513,8 @@ module sl_model_mod
 
           !write out the current ice load as a new file to the sea-level model ice folder
           call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
-
+          !HH write out the mali mask file for debugging
+          !call write_sl(mali_mask(:,:), "mali_mask_init", outputfolder_ice)
       endif ! end if (coupling)
 
       !write out the initial topo of the simulation, tinit_0
@@ -632,6 +637,21 @@ module sl_model_mod
          mean_slc = 0.0
          ! for mean sea level directly calculated based on the deltasl variable
          open(unit = 201, file = trim(outputfolder)//'gmsle_change', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_outside_maliMesh', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_inside_maliMesh', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_sumMesh', form = 'formatted', access ='sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') mean_slc
          close(201)
@@ -1346,6 +1366,33 @@ module sl_model_mod
          write(201,'(ES14.4E2)') mean_slc
          close(201)
       endif
+
+      ! HH: outputs for debugging
+      call read_sl(mask_maliMesh, 'mali_mask_init', outputfolder)
+      deltaslxy_outside_maliMesh(:,:) = deltaslxy(:,:) * (1 - mask_maliMesh(:,:))
+      deltaslxy_inside_maliMesh(:,:) = deltaslxy(:,:) * mask_maliMesh(:,:)
+      call write_sl(deltaslxy_outside_maliMesh(:,:), 'deltaslxy_outside_maliMesh', outputfolder, suffix=numstr)
+      call write_sl(deltaslxy_inside_maliMesh(:,:), 'deltaslxy_inside_maliMesh', outputfolder, suffix=numstr)
+      call spat2spec(deltaslxy_outside_maliMesh(:,:), deltasllm_outside_maliMesh(:,:),spheredat)
+      call spat2spec(deltaslxy_inside_maliMesh(:,:), deltasllm_inside_maliMesh(:,:),spheredat)
+      mean_slc_outside_maliMesh = deltasllm_outside_maliMesh(0,0)
+      mean_slc_inside_maliMesh = deltasllm_inside_maliMesh(0,0)
+      mean_slc_sum = mean_slc_outside_maliMesh + mean_slc_inside_maliMesh
+
+      open(unit = 201, file = trim(outputfolder)//'gmsle_change_outside_maliMesh', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') mean_slc_outside_maliMesh
+      close(201)
+
+      open(unit = 201, file = trim(outputfolder)//'gmsle_change_inside_maliMesh', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') mean_slc_inside_maliMesh
+      close(201)
+
+      open(unit = 201, file = trim(outputfolder)//'gmsle_change_sumMesh', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') mean_slc_sum
+      close(201)
 
       if (coupling) then
          ! topography change between the previous and the current timestep
