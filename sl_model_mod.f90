@@ -447,6 +447,14 @@ module sl_model_mod
       write(unit_num,*) 'nmelt=0, INITIALIZING THE SEA LEVEL MODEL..'
       flush(unit_num)
 
+      !HH: initialize arrays
+      tinit_0(:,:) = 0.0
+      truetopo(:,:) = 0.0
+      cxy0(:,:) = 0.0
+      beta0(:,:) = 0.0
+      icestarxy(:,:) = 0.0
+      icestarlm(:,:) = 0.0
+
       !initialize variables
       j = TIMEWINDOW(1) ! initial file number (i.e. 0)
       write(unit_num,'(A,I4)') 'initial file number:', j
@@ -680,6 +688,20 @@ module sl_model_mod
       real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask ! variables for coupled ISM-SLM simulations
       real, dimension(nglv,2*nglv), intent(out), optional :: slchange ! variable exchanged with the ISM
 
+      !HH: initialize arrays
+      tinit(:,:) = 0.0
+      topoxy_m1(:,:) = 0.0
+      tOxy(:,:) = 0.0
+      beta0(:,:) = 0.0
+      beta(:,:) = 0.0
+      cxy(:,:) = 0.0
+      cxy0(:,:) = 0.0
+      cstarxy(:,:) = 0.0
+      icestarxy(:,:) = 0.0
+      icestarlm(:,:) = 0.0
+      topoxy(:,:) = 0.0
+      deltaslxy(:,:) = 0.0
+
       !===========================================================
       !                   BEGIN TIMING & EXECUTION
       !___________________________________________________________
@@ -803,6 +825,9 @@ module sl_model_mod
                read(201,*) !skip reading in lambda
             enddo
 
+            il(:,:) = 0.0
+            mm(:) = 0.0
+            lambda(:,:) = 0.0
             !read in TPW components - total rotational change from the beginning of simulation
             read(201,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
             read(201,'(3ES19.8E2)') (mm(i), i = 1, 3)
@@ -1003,7 +1028,6 @@ module sl_model_mod
       tOxy(:,:) = tinit(:,:) * (cstarxy(:,:) - cstar0(:,:)) ! (eq. 70)
       call spat2spec(tOxy, tOlm, spheredat) ! Decompose the topo correction term
 
-
       dS(:,:,1) = deltaS(:,:,1)
       if (nmelt > 1) then
          do n = 2, nfiles - 1
@@ -1028,7 +1052,6 @@ module sl_model_mod
       do ! Inner loop
 
          !-----\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/    Rotation    \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/----!
-
          if (tpw) then ! If incorporating rotation
 
              ! MOI perturbations (Matsuyama et al, 2006) (only need (1,3),(2,3), and (3,3))
