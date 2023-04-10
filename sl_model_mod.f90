@@ -138,9 +138,9 @@ module sl_model_mod
 
    !HH variables for debugging
    real, dimension(nglv,2*nglv) :: deltaslxy_outside_maliMesh, deltaslxy_inside_maliMesh
-   complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh
+   complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh, maliMask_lm00
    real, dimension(nglv,2*nglv) :: mask_maliMesh
-   real :: mean_slc_outside_maliMesh, mean_slc_inside_maliMesh, mean_slc_sum
+   real :: mean_slc_outside_maliMesh, mean_slc_inside_maliMesh, mean_slc_sum, area_maliMesh
    contains
 
    !======================================================================================================================!
@@ -495,6 +495,13 @@ module sl_model_mod
        endif
 
        if (coupling) then  !if coupling the ICE SHEET - SEA LEVEL MODELs
+          call spat2spec(mali_mask(:,:),maliMask_lm00(:,:),spheredat)
+          area_maliMesh = maliMask_lm00(0,0)*4*pi*radius**2
+          open(unit = 201, file = trim(outputfolder)//'area_mali_domain', form = 'formatted', access ='sequential', &
+          & status = 'replace')
+          write(201,'(ES14.4E2)') area_maliMesh
+          close(201)
+
           write(unit_num,*) 'Merge initial topography and iceload with the ISM data'
 
           ! merge intitial topography with bedrock provided by the ice sheet model.
@@ -505,6 +512,16 @@ module sl_model_mod
           enddo
 
           ! merge intitial topography with bedrock provided by the ice sheet model.
+          if (patch_ice) then
+             do j = 1,2*nglv
+                do i = 1,nglv
+                   if (mali_mask(i,j) .ne. 1) then
+                      icexy(i,j,nfiles) = 0.0
+                   endif
+                enddo
+             enddo
+          endif
+
           do j = 1,2*nglv
              do i = 1,nglv
                 icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
@@ -721,6 +738,16 @@ module sl_model_mod
 
             ! ice thickness at the current time step inside the ISM domain is provided by the ISM
             ! merge iceload configuration
+            if (patch_ice) then
+               do j = 1,2*nglv
+                  do i = 1,nglv
+                     if (mali_mask(i,j) .ne. 1) then
+                        icexy(i,j,nfiles) = 0.0
+                     endif
+                  enddo
+               enddo
+            endif
+
             do j = 1,2*nglv
                do i = 1,nglv
                   icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
