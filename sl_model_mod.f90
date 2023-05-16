@@ -515,9 +515,7 @@ module sl_model_mod
           if (patch_ice) then
              do j = 1,2*nglv
                 do i = 1,nglv
-                   if (mali_mask(i,j) .ne. 1) then
-                      icexy(i,j,nfiles) = 0.0
-                   endif
+                   icexy(i,j,nfiles) = 0.0
                 enddo
              enddo
           endif
@@ -531,7 +529,7 @@ module sl_model_mod
           !write out the current ice load as a new file to the sea-level model ice folder
           call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
           !HH write out the mali mask file for debugging
-          !call write_sl(mali_mask(:,:), "mali_mask_init", outputfolder_ice)
+          call write_sl(mali_mask(:,:), "mali_mask_init", outputfolder)
       endif ! end if (coupling)
 
       !write out the initial topo of the simulation, tinit_0
@@ -741,9 +739,7 @@ module sl_model_mod
             if (patch_ice) then
                do j = 1,2*nglv
                   do i = 1,nglv
-                     if (mali_mask(i,j) .ne. 1) then
-                        icexy(i,j,nfiles) = 0.0
-                     endif
+                     icexy(i,j,nfiles) = 0.0
                   enddo
                enddo
             endif
