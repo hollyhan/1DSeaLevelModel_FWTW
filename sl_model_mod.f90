@@ -138,7 +138,8 @@ module sl_model_mod
 
    !HH variables for debugging
    real, dimension(nglv,2*nglv) :: deltaslxy_outside_maliMesh, deltaslxy_inside_maliMesh
-   complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh, maliMask_lm00
+   complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh
+   complex, dimension(0:norder,0:norder) :: maliMask_lm00, kFactor2_from_mali_lm00
    real, dimension(nglv,2*nglv) :: mask_maliMesh
    real :: mean_slc_outside_maliMesh, mean_slc_inside_maliMesh, mean_slc_sum, area_maliMesh
    contains
@@ -687,13 +688,18 @@ module sl_model_mod
    end subroutine sl_solver_init
 
    !========================================================================================================================
-   subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, mali_mask, slchange)
+   subroutine sl_solver(itersl, iter, dtime, starttime, mali_iceload, mali_mask, kFactor2_from_mali, slchange, kFactor2Inv_to_mali, mali_mask_ones_only)
       ! Compute sea-level change associated with past ice loading changes
 
-      real :: starttime
+      real :: starttime, k0, lat0, area_maliMesh_kFactor2
       integer :: iter, itersl, dtime
-      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask ! variables for coupled ISM-SLM simulations
-      real, dimension(nglv,2*nglv), intent(out), optional :: slchange ! variable exchanged with the ISM
+      real, dimension(nglv) :: lat512
+      real, dimension(2*nglv) :: lon512
+      real, dimension(nglv,2*nglv) :: kFactor
+      real, dimension(2*nglv,nglv) :: kFactor_test
+      real, dimension(nglv,2*nglv), optional :: mali_iceload, mali_mask, kFactor2_from_mali ! variables for coupled ISM-SLM simulations
+      real, dimension(nglv,2*nglv), intent(out), optional :: slchange, kFactor2Inv_to_mali ! variable exchanged with the ISM
+      integer, dimension(nglv,2*nglv), intent(out), optional :: mali_mask_ones_only
 
       !===========================================================
       !                   BEGIN TIMING & EXECUTION
@@ -702,6 +708,61 @@ module sl_model_mod
       call system_clock(count = counti, count_rate = countrate)  ! Total computation time
 
       if (coupling) then
+         ! calculate area of the mali domain based on the interpolated kFactor^2
+         call spat2spec(kFactor2_from_mali(:,:),kFactor2_from_mali_lm00(:,:),spheredat)
+         area_maliMesh_kFactor2 = kFactor2_from_mali_lm00(0,0)*4*pi*radius**2
+         open(unit = 201, file = trim(outputfolder)//'area_mali_domain_kFactor2', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') area_maliMesh_kFactor2
+         close(201)
+
+         ! create mali masks of 1 on the sea-level model
+         mali_mask_ones_only(:,:) = 0.0
+         do j = 1,2*nglv
+            do i = 1,nglv
+                if (mali_mask(i,j) .NE. 0) then
+                   mali_mask_ones_only(i,j) = 1
+                endif
+            enddo
+         enddo
+
+         open(unit = 201, file = trim(gridfolder)//trim(grid_lat), form = 'formatted', &
+         & access = 'sequential', status = 'old')
+         read(201,*) lat512
+         close(201)
+         open(unit = 201, file = trim(gridfolder)//trim(grid_lon), form = 'formatted', &
+         & access = 'sequential', status = 'old')
+         read(201,*) lon512
+         close(201)
+
+         do j = 1,2*nglv
+            do i = 1,nglv
+                if (mali_mask(i,j) .NE. 0) then
+                   mali_mask_ones_only(i,j) = 1
+                endif
+            enddo
+         enddo
+
+         open(unit = 201, file = trim(outputfolder)//trim('mali_mask_ones_only_on_GLgrid'), form = 'formatted', &
+             & access = 'sequential', status = 'replace')
+             write(201,'(I2)') mali_mask_ones_only
+         close(201)
+
+         k0 = (1 - sin(-71 * 3.14159265359 / 180)) / 2 ! in radian
+         lat0 = -90 * 3.14159265359 / 180 ! center of the latitude in radian
+         !lon0 = 0 ! center of the longitude
+         kFactor= 0.0
+         do j = 1,2*nglv
+            do i = 1,nglv
+                !kFactor(i,j) =  2 * k0 / ( 1 + (sin(lat0) * sin(lat512(i) * 3.14159265359 / 180)) + (cos(lat0) * cos(lat512(i)* 3.14159265359 / 180) * cos((lon512(j)-180)* 3.14159265359 / 180)) )
+                kFactor_test(j,i) =  2 * k0 / ( 1 + (sin(lat0) * sin(lat512(i) * 3.14159265359 / 180)) + (cos(lat0) * cos(lat512(i)* 3.14159265359 / 180) * cos((lon512(j)-180)* 3.14159265359 / 180)) )
+            enddo
+         enddo
+         !call write_txt(kFactor, 'kFactor_on_GLgrid', outputfolder)
+         call write_txt(reshape(kFactor_test,[nglv,2*nglv]), 'kFactor_on_GLgrid_reshape', outputfolder)
+         !kFactor2Inv_to_mali = 1 / kFactor**2
+         kFactor2Inv_to_mali = reshape(1 / kFactor_test**2,[nglv,2*nglv])
+         call write_txt(kFactor2Inv_to_mali, 'kFactor2Inv_on_GLgrid', outputfolder)
 
          if (iter*dtime .GT. L_sim) then
             write(unit_num,*) 'ERROR: The current SLM simulation time exceeds the prescribed simulation length'
