@@ -190,7 +190,7 @@ module sl_io_mod
 
       call check( nf90_put_var(ncid, varid, reshape(data_slm,[2*nglv,nglv]))) !write data
       call check( nf90_put_var(ncid, lon_varid, longrid))
-      call check( nf90_put_var(ncid, lat_varid, latgrid))
+      call check( nf90_put_var(ncid, lat_varid, latgrid(nglv:1:-1)))
       call check( nf90_close(ncid))
 
    end subroutine write_nf90
