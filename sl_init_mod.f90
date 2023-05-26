@@ -205,23 +205,25 @@ module sl_io_mod
       character (len = *), optional ::  suffix
       character (len = *), optional :: fext
       integer :: ncid, varid
+      character(str_len) :: fullfilename
 
       !open the file
       if (present (suffix)) then
           if (present (fext)) then
-             call check( nf90_open(trim(filepath)//trim(filename)//trim(suffix)//trim(fext), &
-            & nf90_nowrite, ncid) )
+             fullfilename = trim(filepath)//trim(filename)//trim(suffix)//trim(fext)
           else
-             call check( nf90_open(trim(filepath)//trim(filename)//trim(suffix)//trim(ext), &
-            & nf90_nowrite, ncid) )
+             fullfilename = trim(filepath)//trim(filename)//trim(suffix)//trim(ext)
           endif
       else
          if (present (fext)) then
-            call check( nf90_open(trim(filepath)//trim(filename)//trim(fext), nf90_nowrite, ncid) )
+            fullfilename = trim(filepath)//trim(filename)//trim(fext)
          else
-            call check( nf90_open(trim(filepath)//trim(filename)//trim(ext), nf90_nowrite, ncid) )
+            fullfilename = trim(filepath)//trim(filename)//trim(ext)
          endif
       endif
+
+      write(unit_num,*) 'Reading variable ', trim(filename), ' from netcdf file ', trim(fullfilename)
+      call check( nf90_open(trim(fullfilename), nf90_nowrite, ncid) )
 
       call check( nf90_inq_varid(ncid, trim(filename), varid) ) !get varid of the data variable
       call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
