@@ -1452,6 +1452,7 @@ module sl_model_mod
       endif
 
       ! HH: outputs for debugging
+      if (coupling) then
       call read_sl(mask_maliMesh, 'mali_mask_init', outputfolder)
       deltaslxy_outside_maliMesh(:,:) = deltaslxy(:,:) * (1 - mask_maliMesh(:,:))
       deltaslxy_inside_maliMesh(:,:) = deltaslxy(:,:) * mask_maliMesh(:,:)
@@ -1462,6 +1463,7 @@ module sl_model_mod
       mean_slc_outside_maliMesh = deltasllm_outside_maliMesh(0,0)
       mean_slc_inside_maliMesh = deltasllm_inside_maliMesh(0,0)
       mean_slc_sum = mean_slc_outside_maliMesh + mean_slc_inside_maliMesh
+      endif
 
       open(unit = 201, file = trim(outputfolder)//'gmsle_change_outside_maliMesh', form = 'formatted', access ='sequential', &
       & status = 'old', position = 'append')
