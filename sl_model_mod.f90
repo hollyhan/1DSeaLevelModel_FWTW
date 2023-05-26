@@ -846,7 +846,7 @@ module sl_model_mod
 
       !Read in the initial topography (topo at the beginning of the full simulation)
       !This is used to output the total sea level change from the beginning of the simulation
-      call read_sl(tinit_0, 'tgrid0', outputfolder)
+      call read_sl(tinit_0, 'tgrid', outputfolder, suffix='0')
 
       j = TIMEWINDOW(1) ! first element of the time window as the initial file
       write(unit_num,'(A,I4)') 'file number of the first item in the TW:', j
