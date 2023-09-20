@@ -82,7 +82,7 @@ module sl_model_mod
    real, dimension(nglv,2*nglv) :: icestarxy                ! Grounded ice thickness
    real, dimension(nglv,2*nglv) :: beta, cstarxy, cstar0    ! Grounded ice mask, ice-free ocean function
    real, dimension(nglv,2*nglv) :: tOxy, rOxy, tTxy         ! Projections used to calculate loads and shoreline migration
-   complex, dimension(0:norder,0:norder) :: cstarlm,oldcstarlm,tOlm,rOlm,dSlm,olddSlm,&
+   complex, dimension(0:norder,0:norder) :: clm,cstarlm,oldcstarlm,tOlm,rOlm,dSlm,olddSlm,&
                                             icestarlm,dicestarlm,deltaicestarlm,oldicestarlm,icestar0, &
                                             t0lm,oldt0lm,tTlm,oldtTlm,dsllm,deltasllm  ! Above, in spectral domain
 
@@ -90,7 +90,7 @@ module sl_model_mod
    real :: ttl, ekhl                                        ! Used in Love number calculations
    complex, dimension(0:norder,0:norder) :: viscous         ! Used in Love number calculations
    real :: xi, zeta                                         ! Convergence checks
-   real :: ice_volume, mean_slc                             ! ice volume and mean sea level change
+   real :: dice_volume, ice_volume, mean_slc                             ! ice volume and mean sea level change
    ! For calculating R and G separately
    real, dimension(nglv,2*nglv) :: rrxy, drrxy_computed
    complex, dimension(0:norder,0:norder) :: rrlm, dgglm, drrlm_computed
@@ -137,11 +137,12 @@ module sl_model_mod
    character(3) :: skip                                    ! variable used to skip lines in reading TPW file
 
    !HH variables for debugging
-   real, dimension(nglv,2*nglv) :: deltaslxy_outside_maliMesh, deltaslxy_inside_maliMesh
+   real, dimension(nglv,2*nglv) :: deltaslxy_outside_maliMesh, deltaslxy_inside_maliMesh, dSxy, dSxyC
    complex, dimension(0:norder,0:norder) :: deltasllm_outside_maliMesh, deltasllm_inside_maliMesh
-   complex, dimension(0:norder,0:norder) :: maliMask_lm00, kFactor2_from_mali_lm00
+   complex, dimension(0:norder,0:norder) :: maliMask_lm00, kFactor2_from_mali_lm00, mean_slc_dSlm
    real, dimension(nglv,2*nglv) :: mask_maliMesh
-   real :: mean_slc_outside_maliMesh, mean_slc_inside_maliMesh, mean_slc_sum, area_maliMesh
+   real :: mean_slc_eustatic,mean_slc_ocean,mean_slc_oceanBeta,mean_slc_outside_maliMesh
+   real :: mean_slc_inside_maliMesh, mean_slc_sum, area_maliMesh, mean_slc_dSxy
    contains
 
    !======================================================================================================================!
@@ -505,10 +506,21 @@ module sl_model_mod
 
           write(unit_num,*) 'Merge initial topography and iceload with the ISM data'
 
+          !HH: create an idealized topography (debug)
+          !tinit_0(:,:) = 4000.0
+          !mali_bedrock(:,:) = -1500.0 !set every MALI mesh to be all below sea level
           ! merge intitial topography with bedrock provided by the ice sheet model.
           do j = 1,2*nglv
              do i = 1,nglv
                 tinit_0(i,j) = mali_bedrock(i,j) + tinit_0(i,j)*(1 - mali_mask(i,j))
+             enddo
+          enddo
+         !HH: to make an idealized topo of depth -1500m, make sure topography is seemlessly below sea level
+          do j = 1,2*nglv
+             do i = 1,nglv
+                if (tinit_0(i,j) < 0) then
+                   tinit_0(i,j) = -1500.0
+                endif
              enddo
           enddo
 
@@ -577,6 +589,8 @@ module sl_model_mod
       write(201,'(ES16.9E2)') deltaS(:,:,1)
       close(201)
 
+      dSxy = 0.0
+      call write_sl(dSxy(:,:), 'dSxy', outputfolder, suffix=numstr)
 
       !========================== computing time =========================
       ! To write out how much time it took to compute sea-level change over one step
@@ -651,10 +665,40 @@ module sl_model_mod
          close(201)
 
          mean_slc = 0.0
+         mean_slc_dSxy = 0.0
+         mean_slc_ocean = 0.0
+         mean_slc_oceanBeta = 0.0
+         dice_volume = 0.0
+
+         open(unit = 201, file = trim(outputfolder)//'dice_volume', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') dice_volume
+         close(201)
+
          ! for mean sea level directly calculated based on the deltasl variable
          open(unit = 201, file = trim(outputfolder)//'gmsle_change', form = 'formatted', access ='sequential', &
          & status = 'replace')
          write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_OceanBeta_b4Convergence', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_OceanBeta', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc_oceanBeta
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_fixedOcean', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc_ocean
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_Ocean', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc_ocean
          close(201)
 
          open(unit = 201, file = trim(outputfolder)//'gmsle_change_outside_maliMesh', form = 'formatted', access ='sequential', &
@@ -671,6 +715,40 @@ module sl_model_mod
          & status = 'replace')
          write(201,'(ES14.4E2)') mean_slc
          close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_sumMesh_scaled', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_dSxy_Ocean_fixed', form = 'formatted', access = 'sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_deltaSL_Ocean_fixed', form = 'formatted', access = 'sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'gmsle_deltaSL_OceanBeta_fixed', form = 'formatted', access = 'sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         cstarxy(:,:) = cxy0(:,:) * beta0(:,:)  ! First guess to the O.F using converged O.F the preivous timestep
+         call spat2spec(cstarxy,cstarlm,spheredat) ! Decompose the current cstar
+         open(unit = 201, file = trim(outputfolder)//'oceanBeta_area', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') real(cstarlm(0,0))*4*pi*radius**2
+         close(201)
+
+         call spat2spec(cxy0, clm, spheredat)
+         open(unit = 201, file = trim(outputfolder)//'ocean_area', form = 'formatted', access ='sequential', &
+         & status = 'replace')
+         write(201,'(ES14.4E2)') real(clm(0,0))*4*pi*radius**2
+         close(201)
+
       endif
 
       !print out the number of iteration it takes for the inner convergence
@@ -1099,6 +1177,11 @@ module sl_model_mod
       dS(:,:,nfiles) = (cstarlm(:,:) / cstarlm(0,0)) * ((-rhoi / rhow) * dicestar(0,0,nfiles)) ! Save into a big array
       dSlm(:,:) = dS(:,:,nfiles)
 
+      mean_slc_eustatic = (-rhoi / rhow) * deltaicestar(0,0,nfiles) / cstarlm(0,0)
+      open(unit = 201, file = trim(outputfolder)//'gmsle_change_OceanBeta_b4Convergence', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') mean_slc_eustatic
+      close(201)
 
       !========================================================================================
       !                   END OF THE OCEAN PART
@@ -1162,6 +1245,7 @@ module sl_model_mod
             ! Calculate effect on sea level (Love numbers) (Kendall)
             dsl_rot(:,:) = (0.0,0.0)
             ekhTE = 1 + kTE(2) - hTE(2)
+            !ekhTE = 0.0
             do nn = 1,nfiles-1 ! Sum over all previous timesteps
                lovebetatt(nn) = 0.0
                do k = 1,nmod(2) ! Sum over k=1,K
@@ -1261,8 +1345,10 @@ module sl_model_mod
          call spat2spec(rOxy, rOlm, spheredat) ! Decompose r0
 
          ! Compute conservation term (STEP 8)
+         conserv = (1 / cstarlm(0,0)) * (-1.0 * (rhoi / rhow) * deltaicestar(0,0,nfiles)) ! (eq. 78)
+         write(unit_num,'(A,ES15.3)') ' ==== conserv term with no corrections= ', conserv
          conserv = (1 / cstarlm(0,0)) * (-1.0 * (rhoi / rhow) * deltaicestar(0,0,nfiles) - rOlm(0,0) + tOlm(0,0)) ! (eq. 78)
-
+         write(unit_num,'(A,ES15.3)') ' ==== conserv term WITH correction= ', conserv
          ! Compute change in ocean load again (STEP 9)
          olddSlm = dSlm ! Save previous-iterate load to check convergence
 
@@ -1271,7 +1357,11 @@ module sl_model_mod
 
           ! Update the total sea-level change up to the current time step
          deltasllm(:,:) = dsllm(:,:) ! Spatially heterogeneous component
+         write(unit_num,'(A,ES15.3)') ' ====deltasllm(0,0) before adding the conserv term= ', deltasllm(0,0)
          deltasllm(0,0) = deltasllm(0,0) + conserv ! Add uniform conservation term to (0,0)
+         !HH print out values
+         write(unit_num,'(A,ES15.3)') ' ====deltasllm(0,0) After adding the conserv term= ', deltasllm(0,0)
+
          call spec2spat(deltaslxy, deltasllm, spheredat) ! Synthesize deltasl
 
          ! Calculate convergence criterion for inner loop
@@ -1409,6 +1499,7 @@ module sl_model_mod
       call write_sl(beta, 'beta', outputfolder, suffix=numstr)
 
       ! output converged total ocean loading changes
+      write(unit_num,*) 'HH================ deltaSlm sum:', sum(deltaS(:,:,nfiles))
       open(unit = 201, file = trim(outputfolder)//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
       & status = 'replace')
       write(201,'(ES14.7E2)') deltaS(:,:,nfiles)
@@ -1443,11 +1534,69 @@ module sl_model_mod
          write(201,'(ES14.4E2)') ice_volume
          close(201)
 
+         dice_volume = deltaicestarlm(0,0)*4*pi*radius**2
+         open(unit = 201, file = trim(outputfolder)//'dice_volume', form = 'formatted', access = 'sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') dice_volume
+         close(201)
+
          ! calculate the mean SLC
-         mean_slc = deltasllm(0,0)
-         open(unit = 201, file = trim(outputfolder)//'gmsle_change', form = 'formatted', access ='sequential', &
+         mean_slc_dSlm(:,:) = deltaS(:,:,nfiles)
+         call spec2spat(dSxy, mean_slc_dSlm, spheredat)
+         dSxyC = dSxy(:,:)*cxy(:,:)
+         call spat2spec(dSxyC,mean_slc_dSlm,spheredat)
+         mean_slc = real(mean_slc_dSlm(0,0)/clm(0,0))
+         open(unit = 201, file = trim(outputfolder)//'gmsle_dSxy_Ocean_fixed', form = 'formatted', access = 'sequential', &
+         & status = 'old', position='append')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         call write_sl(dSxy(:,:)*cxy(:,:), 'dSxy', outputfolder, suffix=numstr)
+
+         dSxy = deltaslxy(:,:)*cxy(:,:)*beta(:,:)
+         call spat2spec(dSxy, mean_slc_dSlm, spheredat)
+         mean_slc = mean_slc_dSlm(0,0)/clm(0,0)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_deltaSL_Ocean_fixed', form = 'formatted', access ='sequential', &
          & status = 'old', position = 'append')
          write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         mean_slc = mean_slc_dSlm(0,0)/cstarlm(0,0)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_deltaSL_OceanBeta_fixed', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') mean_slc
+         close(201)
+
+         call spat2spec(cxy, clm, spheredat)
+         mean_slc_ocean =  deltaicestarlm(0,0)/clm(0,0)*(-rhoi/rhow)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_Ocean', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') mean_slc_ocean
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'ocean_area', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') real(clm(0,0))*4*pi*radius**2
+         close(201)
+
+         mean_slc_oceanBeta = deltaicestarlm(0,0)/cstarlm(0,0)*(-rhoi/rhow)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_OceanBeta', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') mean_slc_oceanBeta
+         close(201)
+
+         !HH calculate again based on non-evolving ocean area
+         cxy(:,:) = cxy0(:,:)
+         call spat2spec(cxy, clm, spheredat)
+         mean_slc_ocean =  deltaicestarlm(0,0)/clm(0,0)*(-rhoi/rhow)
+         open(unit = 201, file = trim(outputfolder)//'gmsle_change_fixedOcean', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') mean_slc_ocean
+         close(201)
+
+         open(unit = 201, file = trim(outputfolder)//'oceanBeta_area', form = 'formatted', access ='sequential', &
+         & status = 'old', position = 'append')
+         write(201,'(ES14.4E2)') real(cstarlm(0,0))*4*pi*radius**2
          close(201)
       endif
 
@@ -1478,6 +1627,11 @@ module sl_model_mod
       open(unit = 201, file = trim(outputfolder)//'gmsle_change_sumMesh', form = 'formatted', access ='sequential', &
       & status = 'old', position = 'append')
       write(201,'(ES14.4E2)') mean_slc_sum
+      close(201)
+
+      open(unit = 201, file = trim(outputfolder)//'gmsle_change_sumMesh_scaled', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') real(mean_slc_sum / clm(0,0))
       close(201)
 
       if (coupling) then
