@@ -70,14 +70,17 @@ module sl_model_mod
    real, dimension(2*nglv)      :: longrid
 
    ! Model calculations
+   real :: gmslc_ocn, gmslc_ocnBeta                         ! Global mean sea-level change over time-evolving ocean areas
    real, dimension(nglv,2*nglv) :: glw_matrix               ! weigtht in the Gaussian-Legendre grid
-   real, dimension(nglv,2*nglv) :: deltaslxy, dslxy         ! Total sea level change,
+   real, dimension(nglv,2*nglv) :: deltaslxy, dslxy         ! Total sea level change
+   real, dimension(nglv,2*nglv) :: slcxy_ocn, slcxy_ocnBeta ! Total sea level change with topography masked out
                                                             !  total spatially heterogeneous sea level change
    real, dimension(nglv,2*nglv) :: icestarxy                ! Grounded ice thickness
    real, dimension(nglv,2*nglv) :: beta, cstarxy, cstar0    ! Grounded ice mask, ice-free ocean function
    real, dimension(nglv,2*nglv) :: tOxy, rOxy, tTxy         ! Projections used to calculate loads and shoreline migration
-   complex, dimension(0:norder,0:norder) :: cstarlm,oldcstarlm,tOlm,rOlm,dSlm,olddSlm,&
-                                            icestarlm,dicestarlm,deltaicestarlm,oldicestarlm,icestar0, &
+   complex, dimension(0:norder,0:norder) :: slclm_ocn,slclm_ocnBeta,clm,cstarlm,oldcstarlm,&
+                                            tOlm,rOlm,dSlm,olddSlm,icestarlm,dicestarlm,&
+                                            deltaicestarlm,oldicestarlm,icestar0, &
                                             t0lm,oldt0lm,tTlm,oldtTlm,dsllm,deltasllm  ! Above, in spectral domain
 
    real :: conserv                                          ! Uniform geoid shift (ΔΦ/g)
@@ -629,6 +632,19 @@ module sl_model_mod
          write(201,'(ES14.4E2)') ice_volume
          close(201)
       endif
+
+      !=========================== GMSLE ==================================
+      gmslc_ocn = 0.0
+      open(unit = 201, file = trim(outputfolder)//'gmslc_ocnArea', form = 'formatted', access ='sequential', &
+      & status = 'replace')
+      write(201,'(ES14.4E2)') gmslc_ocn
+      close(201)
+
+      gmslc_ocnBeta = 0.0
+      open(unit = 201, file = trim(outputfolder)//'gmslc_ocnBetaArea', form = 'formatted', access ='sequential', &
+      & status = 'replace')
+      write(201,'(ES14.4E2)') gmslc_ocnBeta
+      close(201)
 
       !print out the number of iteration it takes for the inner convergence
       open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
@@ -1257,6 +1273,18 @@ module sl_model_mod
          enddo
       enddo
 
+      ! Calculate global mean sea-level change where marine-based region is flooded
+      slcxy_ocn = deltaslxy(:,:) * cxy(:,:)
+      call spat2spec(slcxy_ocn, slclm_ocn, spheredat)
+      call spat2spec(cxy, clm, spheredat)
+      gmslc_ocn = slclm_ocn(0,0) / clm(0,0)
+      ! Calculate global mean sea-level change where marine-based region is NOT flooded
+      slcxy_ocnBeta = deltaslxy(:,:) * cxy(:,:) * beta(:,:)
+      cstarxy = cxy(:,:) * beta(:,:)
+      call spat2spec(slcxy_ocnBeta, slclm_ocnBeta, spheredat)
+      call spat2spec(cstarxy, cstarlm, spheredat)
+      gmslc_ocnBeta = slclm_ocnBeta(0,0) / cstarlm(0,0)
+
       !=========================================================================================
       !                          OUTPUT
       !_________________________________________________________________________________________
@@ -1295,6 +1323,17 @@ module sl_model_mod
 
       ! converged beta function at the current timestpe
       call write_sl(beta, 'beta', outputfolder, suffix=numstr)
+
+      ! output global mean sea level changes
+      open(unit = 201, file = trim(outputfolder)//'gmslc_ocnArea', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') gmslc_ocn
+      close(201)
+
+      open(unit = 201, file = trim(outputfolder)//'gmslc_ocnBetaArea', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') gmslc_ocnBeta
+      close(201)
 
       ! output converged total ocean loading changes
       open(unit = 201, file = trim(outputfolder)//'dS_converged'//trim(numstr), form = 'formatted', access = 'sequential', &
