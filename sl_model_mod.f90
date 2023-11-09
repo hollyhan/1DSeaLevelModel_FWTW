@@ -14,12 +14,6 @@ module sl_model_mod
              sl_solver, sl_deallocate_array, sl_set_unit_num , sl_call_readnl! public module
    public :: iterstr ! public variables
 
-
-   !===============================  Variables for ice sheet - sea level model coupling ===================================|
-   real, dimension(nglv,2*nglv) :: nh_bedrock        ! Northern Hemispheric bedrock provided by the ice sheet model        |
-   real, dimension(nglv,2*nglv) :: nh_iceload        ! Northern Hemispheric iceload provided by the ice sheet model        |
-   !=======================================================================================================================|
-
    !============================================  Variables for the time window============================================|
    integer :: L_TW, TW_nfiles                     !    L_TW; length of a full time window                                  |
                                                   !    TW_nfiles: total number of ice files in a full time window          |
