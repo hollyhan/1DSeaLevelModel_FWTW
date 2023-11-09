@@ -534,6 +534,12 @@ module sl_model_mod
       !  write out the initial ocean function as a file
       call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
 
+      ! write out the ocean area
+      call spat2spec(cxy0, clm, spheredat)
+      open(unit = 201, file = trim(outputfolder)//'ocean_area', form = 'formatted', access ='sequential', &
+      & status = 'replace')
+      write(201,'(ES14.4E2)') real(clm(0,0))*4*pi*radius**2
+      close(201)
 
       !========================== beta function =========================
       ! calculate initial beta
@@ -550,6 +556,13 @@ module sl_model_mod
       !  write out the initial beta function as a file
       call write_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
+      ! write out the ocean area excluding the marine-based region
+      cstarxy(:,:) = cxy0(:,:) * beta0(:,:)
+      call spat2spec(cstarxy,cstarlm,spheredat)
+      open(unit = 201, file = trim(outputfolder)//'oceanBeta_area', form = 'formatted', access ='sequential', &
+      & status = 'replace')
+      write(201,'(ES14.4E2)') real(cstarlm(0,0))*4*pi*radius**2
+      close(201)
 
       !================== total ocean loading change =====================
       ! initialize the total ocean loading change and output as a file
@@ -1323,6 +1336,17 @@ module sl_model_mod
 
       ! converged beta function at the current timestpe
       call write_sl(beta, 'beta', outputfolder, suffix=numstr)
+
+      ! output the ocean areas
+      open(unit = 201, file = trim(outputfolder)//'ocean_area', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') real(clm(0,0))*4*pi*radius**2
+      close(201)
+
+      open(unit = 201, file = trim(outputfolder)//'oceanBeta_area', form = 'formatted', access ='sequential', &
+      & status = 'old', position = 'append')
+      write(201,'(ES14.4E2)') real(cstarlm(0,0))*4*pi*radius**2
+      close(201)
 
       ! output global mean sea level changes
       open(unit = 201, file = trim(outputfolder)//'gmslc_ocnArea', form = 'formatted', access ='sequential', &
