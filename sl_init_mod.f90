@@ -26,9 +26,9 @@ module planets_mod
    ! -------------------------------------------------------------------------
    subroutine earth_init
 
-      radius = 6.371E6              ! Radius of the Earth (m)
+      radius = 6.371229E6              ! Radius of the Earth (m)
       mass = 5.976E24               ! Mass of the Earth (kg)
-      rhoi = 920.0                  ! Density of ice (kg/m^3)
+      rhoi = 910.0                  ! Density of ice (kg/m^3)
       rhow = 1000.0                 ! Density of fresh water (kg/m^3)
       gacc = 9.80665                ! Acceleration due to gravity at the Earth's surface (m/s^2)
       omega = 7.292e-5              ! Rotation rate of the Earth (rad/s)

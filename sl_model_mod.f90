@@ -136,7 +136,6 @@ module sl_model_mod
    character(16) :: carg(20)                               ! Arguments from a bash script
    character(3) :: skip                                    ! variable used to skip lines in reading TPW file
 
-
    contains
 
    !======================================================================================================================!
@@ -501,6 +500,14 @@ module sl_model_mod
           enddo
 
           ! merge intitial topography with bedrock provided by the ice sheet model.
+          if (patch_ice) then
+             do j = 1,2*nglv
+                do i = 1,nglv
+                   icexy(i,j,nfiles) = 0.0
+                enddo
+             enddo
+          endif
+
           do j = 1,2*nglv
              do i = 1,nglv
                 icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
@@ -509,7 +516,6 @@ module sl_model_mod
 
           !write out the current ice load as a new file to the sea-level model ice folder
           call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
-
       endif ! end if (coupling)
 
       !write out the initial topo of the simulation, tinit_0
@@ -694,6 +700,14 @@ module sl_model_mod
 
             ! ice thickness at the current time step inside the ISM domain is provided by the ISM
             ! merge iceload configuration
+            if (patch_ice) then
+               do j = 1,2*nglv
+                  do i = 1,nglv
+                     icexy(i,j,nfiles) = 0.0
+                  enddo
+               enddo
+            endif
+
             do j = 1,2*nglv
                do i = 1,nglv
                   icexy(i,j,nfiles) = mali_iceload(i,j) + icexy(i,j,nfiles)*(1 - mali_mask(i,j))
