@@ -11,7 +11,8 @@ module sl_model_mod
    private
 
    public :: sl_timewindow, set_planet, sl_solver_checkpoint, sl_solver_init, &
-             sl_solver, sl_deallocate_array, sl_set_unit_num , sl_call_readnl! public module
+             sl_solver, sl_allocate_and_initialize_array, sl_deallocate_array, &
+             sl_set_unit_num, sl_call_readnl ! public module
    public :: iterstr ! public variables
 
    !============================================  Variables for the time window============================================|
@@ -52,45 +53,45 @@ module sl_model_mod
 
    !========================= Variables for topography correction (i.e. outer iteration)===================================|
    real :: current_time                            ! time (in years) since the start of the simulation                     |
-   real, dimension(nglv,2*nglv) :: tinit_0         ! topography at the very beginning of the simulation (i.e. time0)       |
-   real, dimension(nglv,2*nglv) :: tinit_0_last    ! tinit_0 from the previous outer-iteration                             |
-   real, dimension(nglv,2*nglv) :: pred_pres_topo  ! predicted present topography at current outer-iteration loop          |
-   real, dimension(nglv,2*nglv) :: init_topo_corr  ! correction applied to compute tinit_0 at current outer-iteration loop |
+   real, dimension(:,:), allocatable :: tinit_0         ! topography at the very beginning of the simulation (i.e. time0)  |
+   real, dimension(:,:), allocatable :: tinit_0_last    ! tinit_0 from the previous outer-iteration                        |
+   real, dimension(:,:), allocatable :: pred_pres_topo  ! predicted present topography at current outer-iteration loop     |
+   real, dimension(:,:), allocatable :: init_topo_corr  ! correction applied to compute tinit_0 at current outer-iter loop |
    character(6) :: iterstr                         ! String for timestep number for reading/writing files                  |
    !=======================================================================================================================|
    ! Inputs
-   real, dimension(nglv,2*nglv) :: truetopo        ! Present-day topography
-   real, dimension(npam,norder) :: rprime,r,s      ! Love numbers
-   real, dimension(norder) :: ke,he                ! Love numbers
-   real, dimension(npam,norder) :: rprimeT,rT      ! Love numbers (tidal)
-   real, dimension(norder) :: kTE, hTE             ! Love numbers (tidal)
+   real, dimension(:,:), allocatable :: truetopo        ! Present-day topography
+   real, dimension(:,:), allocatable :: rprime,r,s      ! Love numbers
+   real, dimension(:), allocatable :: ke,he                ! Love numbers
+   real, dimension(:,:), allocatable :: rprimeT,rT      ! Love numbers (tidal)
+   real, dimension(:), allocatable :: kTE, hTE             ! Love numbers (tidal)
 
    ! grid lat-lon
-   real, dimension(nglv)        :: latgrid
-   real, dimension(2*nglv)      :: longrid
+   real, dimension(:), allocatable :: latgrid
+   real, dimension(:), allocatable :: longrid
 
    ! Model calculations
    real :: gmslc_ocn, gmslc_ocnBeta                         ! Global mean sea-level change over time-evolving ocean areas
-   real, dimension(nglv,2*nglv) :: glw_matrix               ! weigtht in the Gaussian-Legendre grid
-   real, dimension(nglv,2*nglv) :: deltaslxy, dslxy         ! Total sea level change
-   real, dimension(nglv,2*nglv) :: slcxy_ocn, slcxy_ocnBeta ! Total sea level change with topography masked out
+   real, dimension(:,:), allocatable :: glw_matrix               ! weigtht in the Gaussian-Legendre grid
+   real, dimension(:,:), allocatable :: deltaslxy, dslxy         ! Total sea level change
+   real, dimension(:,:), allocatable :: slcxy_ocn, slcxy_ocnBeta ! Total sea level change with topography masked out
                                                             !  total spatially heterogeneous sea level change
-   real, dimension(nglv,2*nglv) :: icestarxy                ! Grounded ice thickness
-   real, dimension(nglv,2*nglv) :: beta, cstarxy, cstar0    ! Grounded ice mask, ice-free ocean function
-   real, dimension(nglv,2*nglv) :: tOxy, rOxy, tTxy         ! Projections used to calculate loads and shoreline migration
-   complex, dimension(0:norder,0:norder) :: slclm_ocn,slclm_ocnBeta,clm,cstarlm,oldcstarlm,&
+   real, dimension(:,:), allocatable :: icestarxy                ! Grounded ice thickness
+   real, dimension(:,:), allocatable :: beta, cstarxy, cstar0    ! Grounded ice mask, ice-free ocean function
+   real, dimension(:,:), allocatable :: tOxy, rOxy, tTxy         ! Projections used to calculate loads and shoreline migration
+   complex, dimension(:,:), allocatable :: slclm_ocn,slclm_ocnBeta,clm,cstarlm,oldcstarlm,&
                                             tOlm,rOlm,dSlm,olddSlm,icestarlm,dicestarlm,&
                                             deltaicestarlm,oldicestarlm,icestar0, &
                                             t0lm,oldt0lm,tTlm,oldtTlm,dsllm,deltasllm  ! Above, in spectral domain
 
    real :: conserv                                          ! Uniform geoid shift (ΔΦ/g)
    real :: ttl, ekhl                                        ! Used in Love number calculations
-   complex, dimension(0:norder,0:norder) :: viscous         ! Used in Love number calculations
+   complex, dimension(:,:), allocatable :: viscous          ! Used in Love number calculations
    real :: xi, zeta                                         ! Convergence checks
    real :: ice_volume                                       ! ice volume
    ! For calculating R and G separately
-   real, dimension(nglv,2*nglv) :: rrxy, drrxy_computed
-   complex, dimension(0:norder,0:norder) :: rrlm, dgglm, drrlm_computed
+   real, dimension(:,:), allocatable :: rrxy, drrxy_computed
+   complex, dimension(:,:), allocatable :: rrlm, dgglm, drrlm_computed
 
    complex :: viscousrr
 
@@ -113,19 +114,20 @@ module sl_model_mod
    type(sphere) :: spheredat                                   ! SH transform data to be passed to subroutines
 
    ! For Jerry's code to read in Love numbers
-   integer :: legord(norder),nmod(norder),nmodes(norder),ll,nm,np
+   integer, dimension(:), allocatable :: legord,nmod,nmodes
+   integer :: ll,nm,np
    real :: xn
-   real, dimension(3,norder) :: elast,asymv,telast,tasymv
-   real, dimension(npam,norder) :: resh,resl,resk,tresh,tresl,tresk
+   real, dimension(:,:), allocatable :: elast,asymv,telast,tasymv
+   real, dimension(:,:), allocatable :: resh,resl,resk,tresh,tresl,tresk
    real :: taurr,taurt,dmx,dmy
 
-   real, dimension(nglv,2*nglv) :: beta0, cxy0, cxy
-   real, dimension(nglv,2*nglv) :: topoxy, topoxy_m1, tinit
+   real, dimension(:,:), allocatable :: beta0, cxy0, cxy
+   real, dimension(:,:), allocatable :: topoxy, topoxy_m1, tinit
                                                  ! topoxy_m1: topogramy from the previous timestep (m1: minus one)
                                                  ! topoxy: topography at the currect timestep
                                                  ! tinit: initial topography within the TimeWindow
 
-   complex, dimension(0:norder,0:norder) :: dS_converged
+   complex, dimension(:,:), allocatable :: dS_converged
    integer :: nmelt, nfiles                                ! Number of melting episodes up to the current timestep
 !   real :: starttime                                       ! start time of the simulation
 !   integer :: nmelt, nfiles, iter, itersl, dtime           ! Number of melting episodes up to the current timestep
@@ -161,7 +163,7 @@ module sl_model_mod
                         planetmodel, icemodel, icemodel_out, timearray, &
                         topomodel, topo_initial, grid_lat, grid_lon, &
                         checkmarine, tpw, calcRG, input_times, &
-                        initial_topo, iceVolume, coupling, patch_ice, &
+                        initial_topo, iceVolume, coupling, patch_ice, norder, nglv, &
                         L_sim, dt1, dt2, dt3, dt4, Ldt1, Ldt2, Ldt3, Ldt4, whichplanet)
 
    end subroutine sl_call_readnl
@@ -361,6 +363,120 @@ module sl_model_mod
 
 
    !=======================================================================================================================!
+   subroutine sl_allocate_and_initialize_array
+      allocate (tinit_0(nglv,2*nglv), tinit_0_last(nglv,2*nglv), pred_pres_topo(nglv,2*nglv), &
+                init_topo_corr(nglv,2*nglv), truetopo(nglv,2*nglv), glw_matrix(nglv,2*nglv), &
+                slcxy_ocn(nglv,2*nglv), slcxy_ocnBeta(nglv,2*nglv), deltaslxy(nglv,2*nglv), &
+                dslxy(nglv,2*nglv), icestarxy(nglv,2*nglv), beta(nglv,2*nglv), cstarxy(nglv,2*nglv), &
+                cstar0(nglv,2*nglv), tOxy(nglv,2*nglv), rOxy(nglv,2*nglv), tTxy(nglv,2*nglv), &
+                rrxy(nglv,2*nglv), drrxy_computed(nglv,2*nglv), beta0(nglv,2*nglv), cxy0(nglv,2*nglv), &
+                cxy(nglv,2*nglv), topoxy(nglv,2*nglv), topoxy_m1(nglv,2*nglv), tinit(nglv,2*nglv), &
+                latgrid(nglv), longrid(2*nglv))
+
+      ! variables of size(npam,norder)
+      allocate (rprime(npam,norder), r(npam,norder), s(npam,norder), rprimeT(npam,norder),&
+                rT(npam,norder), resh(npam,norder), resl(npam,norder), resk(npam,norder),&
+                tresh(npam,norder), tresl(npam,norder), tresk(npam,norder))
+
+      ! variables of size (3,norder)
+      allocate (elast(3,norder), asymv(3,norder), telast(3,norder), tasymv(3,norder))
+
+      ! variables of size (norder)
+      allocate (ke(norder), he(norder), kTE(norder), hTE(norder), legord(norder), &
+                nmod(norder),nmodes(norder))
+
+      ! variables of size (0:norder,0:norder)
+      allocate (slclm_ocn(0:norder,0:norder), slclm_ocnBeta(0:norder,0:norder), clm(0:norder,0:norder), &
+                cstarlm(0:norder,0:norder), oldcstarlm(0:norder,0:norder), tOlm(0:norder,0:norder), &
+                rOlm(0:norder,0:norder), dSlm(0:norder,0:norder), olddSlm(0:norder,0:norder), &
+                icestarlm(0:norder,0:norder), dicestarlm(0:norder,0:norder), deltaicestarlm(0:norder,0:norder), &
+                oldicestarlm(0:norder,0:norder), icestar0(0:norder,0:norder), t0lm(0:norder,0:norder), &
+                oldt0lm(0:norder,0:norder), tTlm(0:norder,0:norder), oldtTlm(0:norder,0:norder), &
+                dsllm(0:norder,0:norder), deltasllm(0:norder,0:norder), viscous(0:norder,0:norder), &
+                rrlm(0:norder,0:norder), dgglm(0:norder,0:norder), drrlm_computed(0:norder,0:norder), &
+                dS_converged(0:norder,0:norder))
+
+      ! initialize the allocated arrays
+      tinit_0 = 0.0
+      tinit_0_last = 0.0
+      pred_pres_topo = 0.0
+      init_topo_corr = 0.0
+      truetopo = 0.0
+      glw_matrix = 0.0
+      slcxy_ocn = 0.0
+      slcxy_ocnBeta = 0.0
+      deltaslxy = 0.0
+      dslxy = 0.0
+      icestarxy = 0.0
+      beta = 0.0
+      cstarxy = 0.0
+      cstar0 = 0.0
+      tOxy = 0.0
+      rOxy = 0.0
+      tTxy = 0.0
+      rrxy = 0.0
+      drrxy_computed = 0.0
+      beta0 = 0.0
+      cxy0 = 0.0
+      cxy = 0.0
+      topoxy = 0.0
+      topoxy_m1 = 0.0
+      tinit = 0.0
+      latgrid = 0.0
+      longrid = 0.0
+      rprime = 0.0
+      r = 0.0
+      s = 0.0
+      rprimeT = 0.0
+      rT = 0.0
+      resh = 0.0
+      resl = 0.0
+      resk = 0.0
+      tresh = 0.0
+      tresl = 0.0
+      tresk = 0.0
+      elast = 0.0
+      asymv = 0.0
+      telast = 0.0
+      tasymv = 0.0
+      ke = 0.0
+      he = 0.0
+      kTE = 0.0
+      hTE = 0.0
+      legord = 0.0
+      nmod = 0.0
+      nmodes = 0.0
+      slclm_ocn = 0.0
+      slclm_ocnBeta = 0.0
+      clm = 0.0
+      cstarlm = 0.0
+      oldcstarlm = 0.0
+      tOlm = 0.0
+      rOlm = 0.0
+      dSlm = 0.0
+      olddSlm = 0.0
+      icestarlm = 0.0
+      dicestarlm = 0.0
+      deltaicestarlm = 0.0
+      oldicestarlm = 0.0
+      icestar0 = 0.0
+      t0lm = 0.0
+      oldt0lm = 0.0
+      tTlm = 0.0
+      oldtTlm = 0.0
+      dsllm = 0.0
+      deltasllm = 0.0
+      viscous = 0.0
+      rrlm = 0.0
+      dgglm = 0.0
+      drrlm_computed = 0.0
+      dS_converged = 0.0
+
+   end subroutine sl_allocate_and_initialize_array
+   !_______________________________________________________________________________________________________________________!
+
+
+   !=======================================================================================================================!
    subroutine sl_deallocate_array
 
       deallocate(mask, iceload, icefiles, TIMEWINDOW)
@@ -372,6 +488,16 @@ module sl_model_mod
       deallocate(rr, gg)
       deallocate(dil, dlambda ,deltalambda)
       deallocate(dm)
+      deallocate(tinit_0, tinit_0_last, pred_pres_topo, init_topo_corr, truetopo, glw_matrix, &
+                 slcxy_ocn, slcxy_ocnBeta, deltaslxy, dslxy, icestarxy, beta, cstarxy, &
+                 cstar0, tOxy, rOxy, tTxy, rrxy, drrxy_computed, beta0, cxy0, cxy, topoxy, topoxy_m1, tinit)
+      deallocate(rprime, r, s, rprimeT, rT, resh, resl, resk, tresh, tresl, tresk)
+      deallocate(elast, asymv, telast, tasymv)
+      deallocate(ke, he, kTE, hTE, legord, nmod, nmodes)
+      deallocate(slclm_ocn, slclm_ocnBeta, clm, cstarlm, oldcstarlm, tOlm, rOlm, dSlm, olddSlm,&
+                 icestarlm, dicestarlm, deltaicestarlm, oldicestarlm, icestar0, t0lm, oldt0lm,&
+                 tTlm, oldtTlm, dsllm, deltasllm, viscous, rrlm, dgglm, drrlm_computed, dS_converged)
+      deallocate(latgrid, longrid)
 
    end subroutine sl_deallocate_array
    !_______________________________________________________________________________________________________________________!

@@ -325,7 +325,7 @@ module sl_io_mod
                         grid_lat, grid_lon, checkmarine, &
                         tpw, calcRG, input_times, &
                         initial_topo, iceVolume, coupling, &
-                        patch_ice, L_sim, dt1, dt2, &
+                        patch_ice, norder, nglv, L_sim, dt1, dt2, &
                         dt3, dt4, Ldt1, Ldt2, &
                         Ldt3, Ldt4, whichplanet)
 
@@ -359,6 +359,8 @@ module sl_io_mod
       logical, intent(out)  :: coupling
       logical, intent(out)  :: patch_ice
 
+      integer, intent(out)  :: norder
+      integer, intent(out)  :: nglv
       integer, intent(out)  :: L_sim
       integer, intent(out)  :: dt1
       integer, intent(out)  :: dt2

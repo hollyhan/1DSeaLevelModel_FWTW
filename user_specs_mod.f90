@@ -97,9 +97,9 @@ module user_specs_mod
    character(str_len) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
    
    ! Model parameters==================================================================================================!
-   integer, parameter :: norder = 512           ! Max spherical harmonic degree/order
+   integer :: norder = 512                      ! Max spherical harmonic degree/order
+   integer :: nglv = 512                        ! Number of GL points in latitude
    integer, parameter :: npam = 500             ! Max relaxation modes
-   integer, parameter :: nglv = 512             ! Number of GL points in latitude
    real, parameter :: epsilon1 = 1.0E-5         ! Inner loop convergence criterion
    real, parameter :: epsilon2 = 1.0E-5         ! Outer loop convergence criterion 
                                                 !  (if doing a convergence check for outer loop, see below)
