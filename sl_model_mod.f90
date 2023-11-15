@@ -320,34 +320,6 @@ module sl_model_mod
       endif
 
       write(unit_num,*) 'HHHHH norder and nglv seen in the sl_timedow module', norder, nglv
-      ! Based on the calcualted number of files read in within the time window at each timestep,
-      ! allocate arrays to the below variables.
-      allocate (times(nfiles), lovebetatt(nfiles), lovebetattrr(nfiles))
-      allocate (lovebetarr(nfiles,norder),lovebeta(nfiles,norder))
-      allocate (icexy(nglv, 2*nglv, nfiles),sl(nglv,2*nglv,nfiles))
-      allocate (dS(0:norder,0:norder,nfiles),deltaS(0:norder,0:norder,nfiles))
-      allocate (dicestar(0:norder,0:norder,nfiles), deltaicestar(0:norder,0:norder,nfiles))
-      allocate (rr(nglv,2*nglv,nfiles),gg(nglv,2*nglv,nfiles))
-      allocate (dil(3,3,nfiles), dlambda(0:2,0:2,TW_nfiles),deltalambda(0:2,0:2,nfiles))
-      allocate (dm(3,nfiles))
-
-      times = 0.0
-      lovebetatt = 0.0
-      lovebetattrr = 0.0
-      lovebetarr = 0.0
-      lovebeta = 0.0
-      icexy = 0.0
-      sl = 0.0
-      dS = 0.0
-      deltaS = 0.0
-      dicestar = 0.0
-      deltaicestar = 0.0
-      rr = 0.0
-      gg = 0.0
-      dil = 0.0
-      dlambda = 0.0
-      deltalambda = 0.0
-      dm = 0.0
 
       !!!!!!!!!!!!!!!!!!!ATTENTION!!!!!!!!
       ! TIMEWINDOW = TIMEWINDOW+1
@@ -399,6 +371,17 @@ module sl_model_mod
                 dsllm(0:norder,0:norder), deltasllm(0:norder,0:norder), viscous(0:norder,0:norder), &
                 rrlm(0:norder,0:norder), dgglm(0:norder,0:norder), drrlm_computed(0:norder,0:norder), &
                 dS_converged(0:norder,0:norder))
+
+      ! Based on the calcualted number of files read in within the time window at each timestep,
+      ! allocate arrays to the below variables.
+      allocate (times(nfiles), lovebetatt(nfiles), lovebetattrr(nfiles))
+      allocate (lovebetarr(nfiles,norder),lovebeta(nfiles,norder))
+      allocate (icexy(nglv, 2*nglv, nfiles),sl(nglv,2*nglv,nfiles))
+      allocate (dS(0:norder,0:norder,nfiles),deltaS(0:norder,0:norder,nfiles))
+      allocate (dicestar(0:norder,0:norder,nfiles), deltaicestar(0:norder,0:norder,nfiles))
+      allocate (rr(nglv,2*nglv,nfiles),gg(nglv,2*nglv,nfiles))
+      allocate (dil(3,3,nfiles), dlambda(0:2,0:2,TW_nfiles),deltalambda(0:2,0:2,nfiles))
+      allocate (dm(3,nfiles))
 
       ! initialize the allocated arrays
       tinit_0 = 0.0
@@ -475,6 +458,24 @@ module sl_model_mod
       dgglm = 0.0
       drrlm_computed = 0.0
       dS_converged = 0.0
+
+      times = 0.0
+      lovebetatt = 0.0
+      lovebetattrr = 0.0
+      lovebetarr = 0.0
+      lovebeta = 0.0
+      icexy = 0.0
+      sl = 0.0
+      dS = 0.0
+      deltaS = 0.0
+      dicestar = 0.0
+      deltaicestar = 0.0
+      rr = 0.0
+      gg = 0.0
+      dil = 0.0
+      dlambda = 0.0
+      deltalambda = 0.0
+      dm = 0.0
 
    end subroutine sl_allocate_and_initialize_array
    !_______________________________________________________________________________________________________________________!
