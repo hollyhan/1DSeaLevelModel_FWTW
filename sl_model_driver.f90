@@ -21,6 +21,7 @@ if (nargs == 4) then ! Check if namelist file is provided
    read (carg(2),*) iter      ! the coupling time step we are on (in years)
    read (carg(3),*) dtime     ! coupling time (in years)
    read (carg(4),*) starttime ! start time of the simulation (in years)
+
 elseif (nargs == 5) then
    call sl_drive_readnl(itersl, dtime, starttime)
    read (carg(2),*) iter

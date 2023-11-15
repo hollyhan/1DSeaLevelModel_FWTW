@@ -69,7 +69,7 @@ module sl_io_mod
    use netCDF
    implicit none
 
-   public :: sl_drive_readnl, sl_readnl
+   public :: sl_drive_readnl, sl_get_model_res, sl_readnl
 
    contains
 
@@ -89,15 +89,17 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_sl(data_slm, filename, filepath, suffix, fext)
+   subroutine read_sl(data_slm, filename, filepath, nglv, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
+      integer, intent(in) :: nglv
       real, dimension(nglv,2*nglv), intent(inout) :: data_slm
       character (len = *), optional :: suffix, fext
-
+      write(unit_num,*) 'HHHHHH nglv seen in the read_sl subroutine sl_init_io module is ', nglv
+      write(unit_num,*) 'HHHHHH size of the data_slm is', size(data_slm), filename
       if (fType_in == 'text') then
-         call read_txt(data_slm, filename, filepath, suffix, fext)
+         call read_txt(data_slm, filename, filepath, nglv, suffix, fext)
       elseif (fType_in == 'netcdf') then
-         call read_nf90(data_slm, filename, filepath, suffix, fext)
+         call read_nf90(data_slm, filename, filepath, nglv, suffix, fext)
       else
          write(unit_num,*) "Error: fType_in should be one of 'netcdf' or 'text'"
          stop
@@ -107,16 +109,18 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_sl(data_slm, filename, filepath, suffix, fext)
+   subroutine write_sl(data_slm, filename, filepath, nglv, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
+      integer, intent(in) :: nglv
       real, dimension(nglv,2*nglv), intent(in) :: data_slm
       character (len = *), optional :: suffix, fext
-
+      write(unit_num,*) 'HHHHHH nglv seen in the write_sl subroutine sl_init_io module is ', nglv
+      write(unit_num,*) 'HHHHHH size of the data_slm is', size(data_slm), filename
       if ((fType_out == 'text') .or. (fType_out == 'both')) then
-         call write_txt(data_slm, filename, filepath, suffix, fext)
+         call write_txt(data_slm, filename, filepath, nglv, suffix, fext)
       endif
       if ((fType_out == 'netcdf') .or. (fType_out == 'both')) then
-         call write_nf90(data_slm, filename, filepath, suffix, fext='.nc')
+         call write_nf90(data_slm, filename, filepath, nglv, suffix, fext='.nc')
       endif
       if ((fType_out /= 'netcdf') .and. (fType_out /= 'text') .and. (fType_out /= 'both')) then
          write(unit_num,*) "Error: fType_out should be one of 'netcdf', 'text', or 'both'"
@@ -127,8 +131,9 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_nf90(data_slm, filename, filepath, suffix, fext)
+   subroutine write_nf90(data_slm, filename, filepath, nglv, suffix, fext)
 
+      integer, intent(in) :: nglv
       character (len = *), intent(in) :: filename, filepath
       integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
       integer, dimension(2) :: dimids
@@ -197,9 +202,10 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_nf90(data_slm, filename, filepath, suffix, fext)
+   subroutine read_nf90(data_slm, filename, filepath, nglv, suffix, fext)
 
       character (len = *), intent(in) :: filename, filepath !file name and path
+      integer, intent(in) :: nglv
       real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
       real, dimension(nglv,2*nglv), intent(out) :: data_slm
       character (len = *), optional ::  suffix
@@ -232,8 +238,9 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine check_ncFile(ncvar, slmvar, varname)
+   subroutine check_ncFile(ncvar, slmvar, varname, nglv)
 
+      integer, intent(in) :: nglv
       real, dimension(nglv,2*nglv), intent(in) :: ncvar, slmvar
       character (len = *), intent(in) :: varname
 
@@ -247,8 +254,8 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_txt(data_slm, filename, filepath, suffix, fext)
-
+   subroutine write_txt(data_slm, filename, filepath, nglv, suffix, fext)
+      integer, intent(in) :: nglv
    real, dimension(nglv,2*nglv), intent(in) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix
@@ -273,8 +280,9 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_txt(data_slm, filename, filepath, suffix, fext)
+   subroutine read_txt(data_slm, filename, filepath, nglv, suffix, fext)
 
+      integer, intent(in) :: nglv
    real, dimension(nglv,2*nglv) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix
@@ -313,6 +321,19 @@ module sl_io_mod
 
    end subroutine sl_drive_readnl
 
+   ! -------------------------------------------------------------------------
+   ! read variables needed to drive the SLM from namelist
+   subroutine sl_get_model_res(norder, nglv)
+
+      integer, intent(out) :: norder, nglv
+
+      namelist /model_resolution/ norder, nglv
+
+      open(201, file='namelist.sealevel', status='old')
+      read(201, model_resolution)
+      close(201)
+
+   end subroutine sl_get_model_res
 
    ! -------------------------------------------------------------------------
    ! read all other variables from namelist
@@ -325,7 +346,7 @@ module sl_io_mod
                         grid_lat, grid_lon, checkmarine, &
                         tpw, calcRG, input_times, &
                         initial_topo, iceVolume, coupling, &
-                        patch_ice, norder, nglv, L_sim, dt1, dt2, &
+                        patch_ice, L_sim, dt1, dt2, &
                         dt3, dt4, Ldt1, Ldt2, &
                         Ldt3, Ldt4, whichplanet)
 
@@ -359,8 +380,6 @@ module sl_io_mod
       logical, intent(out)  :: coupling
       logical, intent(out)  :: patch_ice
 
-      integer, intent(out)  :: norder
-      integer, intent(out)  :: nglv
       integer, intent(out)  :: L_sim
       integer, intent(out)  :: dt1
       integer, intent(out)  :: dt2
@@ -372,6 +391,7 @@ module sl_io_mod
       integer, intent(out)  :: Ldt4
 
       character(5), intent(out) :: whichplanet
+
 
       namelist /io_directory/ inputfolder_ice, inputfolder, &
                               planetfolder, gridfolder, &
