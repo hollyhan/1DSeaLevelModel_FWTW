@@ -319,8 +319,6 @@ module sl_model_mod
          write(unit_num,'(A,I4,A)') '   ', Travel_total - Travel, ' more TW steps to march!'
       endif
 
-      write(unit_num,*) 'HHHHH norder and nglv seen in the sl_timedow module', norder, nglv
-
       !!!!!!!!!!!!!!!!!!!ATTENTION!!!!!!!!
       ! TIMEWINDOW = TIMEWINDOW+1
       ! TIMEWINDOW = -(TIMEWINDOW*100+starttime)
@@ -339,7 +337,6 @@ module sl_model_mod
    !=======================================================================================================================!
    subroutine sl_allocate_and_initialize_array
 
-      write(unit_num,*) 'HHHH sl_allocate_and_initialize_array is seeing norder and nglv as', norder, nglv
       allocate (tinit_0(nglv,2*nglv), tinit_0_last(nglv,2*nglv), pred_pres_topo(nglv,2*nglv), &
                 init_topo_corr(nglv,2*nglv), truetopo(nglv,2*nglv), glw_matrix(nglv,2*nglv), &
                 slcxy_ocn(nglv,2*nglv), slcxy_ocnBeta(nglv,2*nglv), deltaslxy(nglv,2*nglv), &
@@ -548,7 +545,7 @@ module sl_model_mod
 
       ! set up the planet profile
       call set_planet
-      write(unit_num,*) 'HHHH initializing spharmt in sl_solver_checkpoint, norder and nglv values are:', norder, nglv
+
       ! initalize spherical harmonics
       call spharmt_init(spheredat, 2*nglv, nglv, norder, radius) ! Initialize spheredat (for SH transform subroutines)
 
@@ -570,7 +567,7 @@ module sl_model_mod
       write(unit_num,*) 'nmelt=0, INITIALIZING THE SEA LEVEL MODEL..'
       flush(unit_num)
 
-      write(unit_num,*) 'HH in sl_solver init: Number of orders and degree of spherical harmonics is ', norder
+      write(unit_num,*) 'Number of orders and degree of spherical harmonics is ', norder
       write(unit_num,*) 'The number of Gauss-Legendre nodes in latitude(nglv): ', nglv
 
       !initialize variables
@@ -620,8 +617,6 @@ module sl_model_mod
        endif
 
        if (coupling) then  !if coupling the ICE SHEET - SEA LEVEL MODELs
-          write(unit_num,*) '====HHHHH sice of mali_iceload, mali_bedrock, mali_mask',size(mali_iceload),size(mali_bedrock),size(mali_mask)
-          !allocate (mali_iceload(nglv,2*nglv), mali_bedrock(nglv,2*nglv), mali_mask(nglv,2*nglv))
           write(unit_num,*) 'Merge initial topography and iceload with the ISM data'
 
           ! merge intitial topography with bedrock provided by the ice sheet model.
@@ -630,7 +625,6 @@ module sl_model_mod
                 tinit_0(i,j) = mali_bedrock(i,j) + tinit_0(i,j)*(1 - mali_mask(i,j))
              enddo
           enddo
-          write(unit_num,*) '===HHH: MALI mask shape in sl_solver:', size(mali_mask)
           ! merge intitial topography with bedrock provided by the ice sheet model.
           if (patch_ice) then
              do j = 1,2*nglv

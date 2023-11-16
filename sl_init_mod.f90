@@ -94,8 +94,7 @@ module sl_io_mod
       integer, intent(in) :: nglv
       real, dimension(nglv,2*nglv), intent(inout) :: data_slm
       character (len = *), optional :: suffix, fext
-      write(unit_num,*) 'HHHHHH nglv seen in the read_sl subroutine sl_init_io module is ', nglv
-      write(unit_num,*) 'HHHHHH size of the data_slm is', size(data_slm), filename
+
       if (fType_in == 'text') then
          call read_txt(data_slm, filename, filepath, nglv, suffix, fext)
       elseif (fType_in == 'netcdf') then
@@ -114,8 +113,7 @@ module sl_io_mod
       integer, intent(in) :: nglv
       real, dimension(nglv,2*nglv), intent(in) :: data_slm
       character (len = *), optional :: suffix, fext
-      write(unit_num,*) 'HHHHHH nglv seen in the write_sl subroutine sl_init_io module is ', nglv
-      write(unit_num,*) 'HHHHHH size of the data_slm is', size(data_slm), filename
+
       if ((fType_out == 'text') .or. (fType_out == 'both')) then
          call write_txt(data_slm, filename, filepath, nglv, suffix, fext)
       endif
@@ -391,7 +389,6 @@ module sl_io_mod
       integer, intent(out)  :: Ldt4
 
       character(5), intent(out) :: whichplanet
-
 
       namelist /io_directory/ inputfolder_ice, inputfolder, &
                               planetfolder, gridfolder, &
