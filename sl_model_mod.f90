@@ -591,7 +591,7 @@ module sl_model_mod
       lambda(:,:) = 0.0
 
       ! write the values (0.0) for the first timestep
-      open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
+      open(unit = 201, file = trim(outputfolder)//'TPW'//trim(numstr), form = 'formatted', access = 'sequential', &
       & status = 'replace')
       write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
       ! write(unit_num,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') dil(:,:,1), dm(:,1), dlambda(:,:,1)
@@ -761,28 +761,19 @@ module sl_model_mod
       call read_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
       if (tpw) then
-         ! read in variables for the rotation signal
-         open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
-         & status = 'old')
-
+         ! initialize empty arrays
          oldlambda(:,:) = (0.0,0.0)
          oldil(:,:) = 0.0
          oldm(:) = 0.0
 
          do n = 1, nfiles-1
-            ! find the number of lines to skip to read in appropriate TPW components
-            if (n == 1) then
-               j = TIMEWINDOW(n)
-            else
-               j = TIMEWINDOW(n) - TIMEWINDOW(n-1) - 1
-            endif
 
-            !skip lines to read in the rotational components corresponding to timesteps within the TW
-            do m = 1, j
-               read(201,*) !skip line for il
-               read(201,*) !skip reading in mm
-               read(201,*) !skip reading in lambda
-            enddo
+            j = TIMEWINDOW(n)
+            write(numstr,'(I4)') j
+            numstr = trim(adjustl(numstr))
+            ! read in variables for the rotation signal
+            open(unit = 201, file = trim(outputfolder)//'TPW'//trim(numstr), &
+            & form = 'formatted', access = 'sequential', status = 'old')
 
             !read in TPW components - total rotational change from the beginning of simulation
             read(201,'(9ES19.8E2)') ((il(i,j), i = 1,3), j = 1, 3)
@@ -802,8 +793,8 @@ module sl_model_mod
             if (n == nfiles-1) then
                deltalambda(:,:,nfiles-1) = lambda(:,:)
             endif
+            close(201)
          enddo
-         close(201)
       endif !endif (TPW)
 
       ! find index of the previous timestep
@@ -1226,20 +1217,6 @@ module sl_model_mod
       !-----------------------------------------------------------
       write(unit_num,'(A,I4,A)') '  ', ninner, ' inner-loop iterations'
 
-      !HH: print out the number of iteration it takes for the inner convergence
-      open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
-      & status = 'old', position='append')
-      write(201,'(I5)') ninner
-      close(201)
-
-      ! Write out the converged rotation-related quantities
-      if (tpw) then
-         open(unit = 201, file = trim(outputfolder)//'TPW', form = 'formatted', access = 'sequential', &
-         & status = 'old', position='append')
-         write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
-         close(201)
-      endif
-
       if (calcRG) then ! For R calculations
          if (nmelt == 0) then
             rrlm(:,:) = (0.0,0.0)! No change on first timestep
@@ -1295,6 +1272,20 @@ module sl_model_mod
       & status = 'old',position='append')
       write(201,'(I4)') nmelt
       close(201)
+
+      ! number of iteration it takes for the inner convergence
+      open(unit = 201, file = trim(outputfolder)//'numiter', form = 'formatted', access ='sequential', &
+      & status = 'old', position='append')
+      write(201,'(I5)') ninner
+      close(201)
+
+      ! converged rotation-related quantities
+      if (tpw) then
+         open(unit = 201, file = trim(outputfolder)//'TPW'//trim(numstr), form = 'formatted', &
+         & access = 'sequential', status = 'replace')
+         write(201,'(9ES19.8E2/,3ES19.8E2/,18ES19.8E2)') il(:,:), mm(:), lambda(:,:)
+         close(201)
+      endif
 
       ! topography at the current timestep
       call write_sl(topoxy, 'tgrid', outputfolder, suffix=numstr)
