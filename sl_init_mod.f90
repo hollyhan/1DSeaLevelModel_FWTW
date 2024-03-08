@@ -92,7 +92,7 @@ module sl_io_mod
    subroutine read_sl(data_slm, filename, filepath, nglv, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
       integer, intent(in) :: nglv
-      real, dimension(nglv,2*nglv), intent(inout) :: data_slm
+      real, dimension(:,:), intent(inout) :: data_slm
       character (len = *), optional :: suffix, fext
 
       if (fType_in == 'text') then
@@ -111,7 +111,7 @@ module sl_io_mod
    subroutine write_sl(data_slm, filename, filepath, nglv, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
       integer, intent(in) :: nglv
-      real, dimension(nglv,2*nglv), intent(in) :: data_slm
+      real, dimension(:,:), intent(in) :: data_slm
       character (len = *), optional :: suffix, fext
 
       if ((fType_out == 'text') .or. (fType_out == 'both')) then
@@ -135,11 +135,15 @@ module sl_io_mod
       character (len = *), intent(in) :: filename, filepath
       integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
       integer, dimension(2) :: dimids
-      real, dimension(nglv,2*nglv), intent(in) :: data_slm !data in the SLM written to the netCDF file
+      real, dimension(:,:), intent(in) :: data_slm !data in the SLM written to the netCDF file
       character (len = *), optional ::  suffix
       character (len = *), optional :: fext
-      real, dimension(nglv)        :: latgrid
-      real, dimension(2*nglv)      :: longrid
+      real, dimension(:), allocatable :: latgrid
+      real, dimension(:), allocatable :: longrid
+
+      allocate (latgrid(nglv), longrid(2*nglv))
+      latgrid = 0.0
+      longrid = 0.0
 
       ! attribute IDs for I/O in netCDF
       !character (len = *), parameter :: UNITS = "units"
@@ -204,11 +208,14 @@ module sl_io_mod
 
       character (len = *), intent(in) :: filename, filepath !file name and path
       integer, intent(in) :: nglv
-      real, dimension(2*nglv,nglv) :: data_temp !temp. variable name in the SLM in which nc data will be stored
-      real, dimension(nglv,2*nglv), intent(out) :: data_slm
+      real, dimension(:,:), allocatable :: data_temp !temp. variable name in the SLM in which nc data will be stored
+      real, dimension(:,:), intent(out) :: data_slm
       character (len = *), optional ::  suffix
       character (len = *), optional :: fext
       integer :: ncid, varid
+
+      allocate (data_temp(2*nglv,nglv))
+      data_temp = 0.0
 
       !open the file
       if (present (suffix)) then
@@ -239,7 +246,7 @@ module sl_io_mod
    subroutine check_ncFile(ncvar, slmvar, varname, nglv)
 
       integer, intent(in) :: nglv
-      real, dimension(nglv,2*nglv), intent(in) :: ncvar, slmvar
+      real, dimension(:,:), intent(in) :: ncvar, slmvar
       character (len = *), intent(in) :: varname
 
       if (sum(sum(ncvar, dim=1))-sum(sum(slmvar,dim=1)) .NE.0) then
@@ -254,7 +261,7 @@ module sl_io_mod
    ! -------------------------------------------------------------------------
    subroutine write_txt(data_slm, filename, filepath, nglv, suffix, fext)
       integer, intent(in) :: nglv
-   real, dimension(nglv,2*nglv), intent(in) :: data_slm
+      real, dimension(:,:), intent(in) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix
 
@@ -281,7 +288,7 @@ module sl_io_mod
    subroutine read_txt(data_slm, filename, filepath, nglv, suffix, fext)
 
       integer, intent(in) :: nglv
-   real, dimension(nglv,2*nglv) :: data_slm
+      real, dimension(:,:), intent(inout) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix
 
