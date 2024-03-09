@@ -89,16 +89,15 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_sl(data_slm, filename, filepath, nglv, suffix, fext)
+   subroutine read_sl(data_slm, filename, filepath, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
-      integer, intent(in) :: nglv
       real, dimension(:,:), intent(inout) :: data_slm
       character (len = *), optional :: suffix, fext
 
       if (fType_in == 'text') then
-         call read_txt(data_slm, filename, filepath, nglv, suffix, fext)
+         call read_txt(data_slm, filename, filepath, suffix, fext)
       elseif (fType_in == 'netcdf') then
-         call read_nf90(data_slm, filename, filepath, nglv, suffix, fext)
+         call read_nf90(data_slm, filename, filepath, suffix, fext)
       else
          write(unit_num,*) "Error: fType_in should be one of 'netcdf' or 'text'"
          stop
@@ -108,17 +107,16 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_sl(data_slm, filename, filepath, nglv, suffix, fext)
+   subroutine write_sl(data_slm, filename, filepath, suffix, fext)
       character (len = *), intent (in) :: filename, filepath
-      integer, intent(in) :: nglv
       real, dimension(:,:), intent(in) :: data_slm
       character (len = *), optional :: suffix, fext
 
       if ((fType_out == 'text') .or. (fType_out == 'both')) then
-         call write_txt(data_slm, filename, filepath, nglv, suffix, fext)
+         call write_txt(data_slm, filename, filepath, suffix, fext)
       endif
       if ((fType_out == 'netcdf') .or. (fType_out == 'both')) then
-         call write_nf90(data_slm, filename, filepath, nglv, suffix, fext='.nc')
+         call write_nf90(data_slm, filename, filepath, suffix, fext='.nc')
       endif
       if ((fType_out /= 'netcdf') .and. (fType_out /= 'text') .and. (fType_out /= 'both')) then
          write(unit_num,*) "Error: fType_out should be one of 'netcdf', 'text', or 'both'"
@@ -129,9 +127,8 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_nf90(data_slm, filename, filepath, nglv, suffix, fext)
+   subroutine write_nf90(data_slm, filename, filepath, suffix, fext)
 
-      integer, intent(in) :: nglv
       character (len = *), intent(in) :: filename, filepath
       integer :: ncid, varid, lat_varid, lon_varid, lat_dimid, lon_dimid
       integer, dimension(2) :: dimids
@@ -204,10 +201,9 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_nf90(data_slm, filename, filepath, nglv, suffix, fext)
+   subroutine read_nf90(data_slm, filename, filepath, suffix, fext)
 
       character (len = *), intent(in) :: filename, filepath !file name and path
-      integer, intent(in) :: nglv
       real, dimension(:,:), allocatable :: data_temp !temp. variable name in the SLM in which nc data will be stored
       real, dimension(:,:), intent(out) :: data_slm
       character (len = *), optional ::  suffix
@@ -243,9 +239,8 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine check_ncFile(ncvar, slmvar, varname, nglv)
+   subroutine check_ncFile(ncvar, slmvar, varname)
 
-      integer, intent(in) :: nglv
       real, dimension(:,:), intent(in) :: ncvar, slmvar
       character (len = *), intent(in) :: varname
 
@@ -259,8 +254,7 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine write_txt(data_slm, filename, filepath, nglv, suffix, fext)
-      integer, intent(in) :: nglv
+   subroutine write_txt(data_slm, filename, filepath, suffix, fext)
       real, dimension(:,:), intent(in) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix
@@ -285,9 +279,8 @@ module sl_io_mod
 
 
    ! -------------------------------------------------------------------------
-   subroutine read_txt(data_slm, filename, filepath, nglv, suffix, fext)
+   subroutine read_txt(data_slm, filename, filepath, suffix, fext)
 
-      integer, intent(in) :: nglv
       real, dimension(:,:), intent(inout) :: data_slm
       character (len = *), intent(in) :: filename, filepath
       character (len = *), optional :: fext, suffix

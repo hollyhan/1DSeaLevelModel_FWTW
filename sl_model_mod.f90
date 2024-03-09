@@ -582,16 +582,16 @@ module sl_model_mod
 
       !====================== topography and ice load========================
       ! read in the initial iceload from the coupled ice input folder
-      call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, nglv, suffix=numstr)
+      call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
       !  Initialize topography (STEP 1)
       if (initial_topo) then
          write(unit_num,*) 'Reading in initial topo file'
-         call read_sl(tinit_0, topo_initial, inputfolder, nglv)
+         call read_sl(tinit_0, topo_initial, inputfolder)
       else  ! if initial topo is unknown
 
          ! Present-day observed topography
          write(unit_num,*) 'Reading in ETOPO2 file'
-         call read_sl(truetopo, topomodel, inputfolder, nglv)
+         call read_sl(truetopo, topomodel, inputfolder)
 
          ! if topography is not iteratively getting improved, or if at the first loop of outer-iteration
          if (itersl == 1) then
@@ -605,10 +605,10 @@ module sl_model_mod
              write(iterstr,'(I2)') itersl-1
              iterstr = trim(adjustl(iterstr))
 
-             call read_sl(pred_pres_topo, 'pred_pres_topo_', outputfolder, nglv, suffix=iterstr)
+             call read_sl(pred_pres_topo, 'pred_pres_topo_', outputfolder, suffix=iterstr)
 
              ! read in tinit_0 from the previous outer-iteration 'itersl-1'
-             call read_sl(tinit_0_last, 'tgrid0_', outputfolder, nglv, suffix=iterstr)
+             call read_sl(tinit_0_last, 'tgrid0_', outputfolder, suffix=iterstr)
 
              ! compute topography correction for the initial topography
              init_topo_corr(:,:) = truetopo(:,:) - pred_pres_topo(:,:)
@@ -641,11 +641,11 @@ module sl_model_mod
           enddo
 
           !write out the current ice load as a new file to the sea-level model ice folder
-          call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, nglv, suffix=numstr)
+          call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
       endif ! end if (coupling)
 
       !write out the initial topo of the simulation, tinit_0
-      call write_sl(tinit_0(:,:), 'tgrid', outputfolder, nglv, suffix=numstr)
+      call write_sl(tinit_0(:,:), 'tgrid', outputfolder, suffix=numstr)
 
 
       !========================== ocean function =========================
@@ -661,7 +661,7 @@ module sl_model_mod
       enddo
 
       !  write out the initial ocean function as a file
-      call write_sl(cxy0(:,:), 'ocean', outputfolder, nglv, suffix=numstr)
+      call write_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
 
       ! write out the ocean area
       call spat2spec(cxy0, clm, spheredat)
@@ -683,7 +683,7 @@ module sl_model_mod
       enddo
 
       !  write out the initial beta function as a file
-      call write_sl(beta0(:,:), 'beta', outputfolder, nglv, suffix=numstr)
+      call write_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
       ! write out the ocean area excluding the marine-based region
       cstarxy(:,:) = cxy0(:,:) * beta0(:,:)
@@ -838,7 +838,7 @@ module sl_model_mod
                numstr = trim(adjustl(numstr))
 
               ! read in ice files (upto the previous time step) from the sea-level model folder
-              call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, nglv, suffix=numstr)
+              call read_sl(icexy(:,:,n), icemodel_out, outputfolder_ice, suffix=numstr)
 
             enddo
 
@@ -848,7 +848,7 @@ module sl_model_mod
             numstr = trim(adjustl(numstr))
 
             ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
-            call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, nglv, suffix=numstr)
+            call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
 
             ! ice thickness at the current time step inside the ISM domain is provided by the ISM
             ! merge iceload configuration
@@ -874,7 +874,7 @@ module sl_model_mod
             write(numstr,'(I6)') j
             numstr = trim(adjustl(numstr))
             ! read in ice files (upto the previous time step) from the sea-level model folder
-            call read_sl(icexy(:,:,n), icemodel, inputfolder_ice, nglv, suffix=numstr)
+            call read_sl(icexy(:,:,n), icemodel, inputfolder_ice, suffix=numstr)
          enddo
 
       endif !endif coupling
@@ -901,7 +901,7 @@ module sl_model_mod
 
       !Read in the initial topography (topo at the beginning of the full simulation)
       !This is used to output the total sea level change from the beginning of the simulation
-      call read_sl(tinit_0, 'tgrid0', outputfolder, nglv)
+      call read_sl(tinit_0, 'tgrid0', outputfolder)
 
       j = TIMEWINDOW(1) ! first element of the time window as the initial file
       write(unit_num,'(A,I4)') 'file number of the first item in the TW:', j
@@ -909,14 +909,14 @@ module sl_model_mod
       numstr = trim(adjustl(numstr))
 
       ! read in initial (first file within the time window) ocean function
-      call read_sl(cxy0(:,:), 'ocean', outputfolder, nglv, suffix=numstr)
+      call read_sl(cxy0(:,:), 'ocean', outputfolder, suffix=numstr)
 
       if (nmelt == 1) then
          cxy(:,:) = cxy0(:,:)
       endif
 
       ! read in initial (first file within the time window) beta
-      call read_sl(beta0(:,:), 'beta', outputfolder, nglv, suffix=numstr)
+      call read_sl(beta0(:,:), 'beta', outputfolder, suffix=numstr)
 
       if (tpw) then
          ! initialize empty arrays
@@ -961,7 +961,7 @@ module sl_model_mod
       numstr2 = trim(adjustl(numstr2))
 
       ! read in topography of the previous timestep
-      call read_sl(topoxy_m1(:,:), 'tgrid', outputfolder, nglv, suffix=numstr2)
+      call read_sl(topoxy_m1(:,:), 'tgrid', outputfolder, suffix=numstr2)
 
       ! condition for time window travel
       if (Travel.EQ.0) then
@@ -973,7 +973,7 @@ module sl_model_mod
          write(numstr,'(I4)') j
          numstr = trim(adjustl(numstr))
 
-        call read_sl(tinit(:,:), 'tgrid', outputfolder, nglv, suffix=numstr)
+        call read_sl(tinit(:,:), 'tgrid', outputfolder, suffix=numstr)
       endif
       !endif nmelt>0
 
@@ -985,7 +985,7 @@ module sl_model_mod
          numstr = trim(adjustl(numstr))
 
          ! read in converged ocean function from the last timestep
-         call read_sl(cxy(:,:), 'ocean', outputfolder, nglv, suffix=numstr)
+         call read_sl(cxy(:,:), 'ocean', outputfolder, suffix=numstr)
 
          ! if there has been more than one melting episode
          ! read in the total ocean loading computed from previous timesteps 0 to nmelt minus 1.
@@ -1458,13 +1458,13 @@ module sl_model_mod
       endif
 
       ! topography at the current timestep
-      call write_sl(topoxy, 'tgrid', outputfolder, nglv, suffix=numstr)
+      call write_sl(topoxy, 'tgrid', outputfolder, suffix=numstr)
 
       ! converged ocean function at the current timestep
-      call write_sl(cxy, 'ocean', outputfolder, nglv, suffix=numstr)
+      call write_sl(cxy, 'ocean', outputfolder, suffix=numstr)
 
       ! converged beta function at the current timestpe
-      call write_sl(beta, 'beta', outputfolder, nglv, suffix=numstr)
+      call write_sl(beta, 'beta', outputfolder, suffix=numstr)
 
       ! output the ocean areas
       open(unit = 201, file = trim(outputfolder)//'ocean_area', form = 'formatted', access ='sequential', &
@@ -1509,28 +1509,28 @@ module sl_model_mod
          write(unit_num,*) 'Last time step of the simulation! writing out files for next outer-iteration loop'
 
          ! write out the predicted present day topography into a file so it can be used in the next outer-iteration
-         call write_sl(topoxy, 'pred_pres_topo_', outputfolder, nglv, suffix=iterstr)
+         call write_sl(topoxy, 'pred_pres_topo_', outputfolder, suffix=iterstr)
 
          ! write out the initial topography of the simulation at the currect outer-loop into a file
-         call write_sl(tinit_0, 'tgrid0_', outputfolder, nglv, suffix=iterstr)
+         call write_sl(tinit_0, 'tgrid0_', outputfolder, suffix=iterstr)
        endif
 
       if (calcRG) then
-         call write_sl(rr(:,:,nfiles), 'R', outputfolder, nglv, suffix=numstr)
+         call write_sl(rr(:,:,nfiles), 'R', outputfolder, suffix=numstr)
 
          ! Compute geoid displacement and write out
          gg(:,:,nfiles) = deltaslxy(:,:)+rr(:,:,nfiles)
 
-         call write_sl(gg(:,:,nfiles), 'G', outputfolder, nglv, suffix=numstr)
+         call write_sl(gg(:,:,nfiles), 'G', outputfolder, suffix=numstr)
        endif
 
       if (coupling) then
          ! topography change between the previous and the current timestep
          ! this is the information passed to the ice sheet model
-         !call write_sl(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled, nglv)
+         !call write_sl(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled)
           slchange = topoxy_m1(:,:)-topoxy(:,:)
          !write out the current ice load as a new file
-         call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, nglv, suffix=numstr)
+         call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
       endif !endif coupling
 
       call system_clock(countf) ! Total time
