@@ -197,6 +197,8 @@ module sl_io_mod
       call check( nf90_put_var(ncid, lat_varid, latgrid))
       call check( nf90_close(ncid))
 
+      deallocate (latgrid, longrid)
+
    end subroutine write_nf90
 
 
@@ -234,6 +236,8 @@ module sl_io_mod
       call check( nf90_get_var(ncid, varid, data_temp) ) ! read the data
       call check( nf90_close(ncid) ) ! close the file
       data_slm = reshape(data_temp,[nglv,2*nglv])
+
+      deallocate (data_temp)
 
    end subroutine read_nf90
 
