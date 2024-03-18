@@ -4,6 +4,11 @@
     dt1 = 5
 
 /
+&model_resolution
+    norder = 512
+    nglv = 512
+
+/
 &io_directory
     inputfolder_ice = 'INPUT_FILES/icemodel/'
     inputfolder = 'INPUT_FILES/others/'

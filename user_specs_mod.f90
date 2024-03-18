@@ -60,6 +60,14 @@ module user_specs_mod
    ! 'folder_coupled' stores files that are exchanged between the ice (NHiceload) and sea level (bedrock) models. It is
    !  not used if the sea-level model (SLM) is not coupled to an ice sheet model (ISM)
 
+   ! Note: many of the items below are configurable in the 'namelist.sealevel' file. The use of the namelist file allows
+   ! the users to not have to re-compile the code when they change the options in the file. The options configurable
+   ! in the 'namelist.sealevel' files are the following: 'inputfolder_ice', 'inputfolder', 'planetfolder', 'gridfolder',
+   ! 'outputfolder', 'outputfolder_ice', 'folder_coupled', 'ext', 'fType_in', 'fType_out', 'planetmodel', 'icemodel',
+   ! 'icemodel_out', 'timearray', 'topomodel', 'topo_initial', 'grid_lat', 'grid_lon', 'checkmarine', 'tpw', 'calcRG',
+   ! 'input_times', 'initial_topo', 'iceVolume', 'coupling', 'patch_ice', 'norder', 'nglv', 'L_sim', 'dt1', 'dt2', 'dt3',
+   ! 'dt4', 'Ldt1', 'Ldt2', 'Ldt3', 'Ldt4'
+
    integer, parameter :: str_len = 200
    integer :: unit_num
 
@@ -97,9 +105,9 @@ module user_specs_mod
    character(str_len) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
    
    ! Model parameters==================================================================================================!
-   integer, parameter :: norder = 512           ! Max spherical harmonic degree/order
+   integer :: norder = 512                      ! Max spherical harmonic degree/order
+   integer :: nglv = 512                        ! Number of GL points in latitude
    integer, parameter :: npam = 500             ! Max relaxation modes
-   integer, parameter :: nglv = 512             ! Number of GL points in latitude
    real, parameter :: epsilon1 = 1.0E-5         ! Inner loop convergence criterion
    real, parameter :: epsilon2 = 1.0E-5         ! Outer loop convergence criterion 
                                                 !  (if doing a convergence check for outer loop, see below)

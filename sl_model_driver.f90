@@ -37,6 +37,9 @@ call sl_solver_checkpoint(itersl, dtime)
 ! set up the temporal resolution
 call sl_timewindow(iter)
 
+! initialize arrays
+call sl_allocate_and_initialize_array
+
 ! intialize and execute the sea-level solver
 if (iter .eq. 0) then
    call sl_solver_init(itersl, starttime)
@@ -44,4 +47,6 @@ elseif (iter .gt. 0) then
    call sl_solver(itersl, iter, dtime, starttime)
 endif
 
+! deallocate arrays
+call sl_deallocate_array
 end program sl_model_driver
