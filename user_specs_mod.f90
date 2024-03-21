@@ -68,6 +68,7 @@ module user_specs_mod
    character(str_len) :: inputfolder  = 'INPUT_FILES/others/'
    character(str_len) :: planetfolder = 'INPUT_FILES/earthmodel/'
    character(str_len) :: gridfolder = 'INPUT_FILES/others/'
+   character(str_len) :: dynamictopofolder = 'INPUT_FILES/others/'
 	  
    ! Output directory
    character(str_len) :: outputfolder = 'OUTPUT_SLM/'
@@ -95,6 +96,7 @@ module user_specs_mod
    character(str_len) :: topo_initial  = 'etopo2_512_AISbedmap2'
    character(str_len) :: grid_lat       = 'GLlat_512.txt'           ! Grid file for latitude
    character(str_len) :: grid_lon       = 'GLlon_512.txt'           ! Grid file for longitude
+   character(str_len) :: prescribed_dt  = 'richards_TC_gl'          ! Prescribed dynamic topography changes on a GL512 grid 
    
    ! Model parameters==================================================================================================!
    integer, parameter :: norder = 512           ! Max spherical harmonic degree/order
@@ -103,6 +105,8 @@ module user_specs_mod
    real, parameter :: epsilon1 = 1.0E-5         ! Inner loop convergence criterion
    real, parameter :: epsilon2 = 1.0E-5         ! Outer loop convergence criterion 
                                                 !  (if doing a convergence check for outer loop, see below)
+   integer, parameter :: ndyntopo = 500         ! Number of steps over which to apply the dynamic topography correction
+                                                ! To avoid floating point errors, 1/ndyntopo should terminate
 
    ! CHECK TRUE OR FALSE ==============================================================================================!
    logical :: checkmarine = .false.  ! .true. to check for floating marine-based ice
@@ -122,6 +126,8 @@ module user_specs_mod
    logical :: patch_ice = .false.    ! .true. patch ice data with zeros
                                                 ! .false. merge the icemodel files with ice grids provided by the ISM
                                                 !. patch_ice is only activated when 'coupling' is .true.
+   logical :: dynamic_topo = .true.  ! .true. also apply a prescribed dynamic topography change to the coupling output
+                                                ! dynamic_topo is only activated when 'coupling; is .true.
 
    !Time Window parameters=======================================================================================!
 

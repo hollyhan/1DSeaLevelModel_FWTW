@@ -18,6 +18,7 @@ module sl_model_mod
    !===============================  Variables for ice sheet - sea level model coupling ===================================|
    real, dimension(nglv,2*nglv) :: nh_bedrock        ! Northern Hemispheric bedrock provided by the ice sheet model        |
    real, dimension(nglv,2*nglv) :: nh_iceload        ! Northern Hemispheric iceload provided by the ice sheet model        |
+   real, dimension(nglv,2*nglv) :: dynamic_topo_grid ! Used to read dynamic topography change file if dynamic_topo = true| |
    !=======================================================================================================================|
 
    !============================================  Variables for the time window============================================|
@@ -53,7 +54,7 @@ module sl_model_mod
    real, dimension(:,:), allocatable :: dm                              ! Big array of changes in m                        |
    real, dimension(:), allocatable :: lovebetatt, lovebetattrr          ! Used in Love number calculations                 |
    real, dimension(:,:), allocatable :: lovebeta                        !                                                  |
-   real, dimension(:,:), allocatable ::   lovebetarr                    ! Used in Love number calculations                 |
+   real, dimension(:,:), allocatable ::   lovebetarr                    ! Used in Love number calculations   
    !=======================================================================================================================|
 
    !========================= Variables for topography correction (i.e. outer iteration)===================================|
@@ -1273,6 +1274,16 @@ module sl_model_mod
       enddo
 
       !=========================================================================================
+      !                          Handling prescribed dynamic topography 
+      !_________________________________________________________________________________________
+      !Check if this call is one where we're applying a DT correction
+      if (dynamic_topo .and. iter <= ndyntopo) then
+      !If yes, read in dynamic topo file (should be GL512)
+         call read_sl(dynamic_topo_grid(:,:), prescribed_dt, dynamictopofolder)
+      !I am actually adding it to the coupling file at the output stage to not mess with any GIA calculations
+      endif
+
+      !=========================================================================================
       !                          OUTPUT
       !_________________________________________________________________________________________
 
@@ -1338,6 +1349,10 @@ module sl_model_mod
          ! this is the information passed to the ice sheet model
          !call write_sl(topoxy_m1(:,:)-topoxy(:,:), 'bedrock', folder_coupled)
           slchange = topoxy_m1(:,:)-topoxy(:,:)
+         if (dynamic_topo .and. iter <= ndyntopo) then
+            slchange = slchange(:,:) + (1.0/(ndyntopo * 1.0_dp)) * dynamic_topo_grid(:,:)
+         endif
+
          !write out the current ice load as a new file
          call write_sl(icexy(:,:,nfiles), icemodel_out, outputfolder_ice, suffix=numstr)
       endif !endif coupling
