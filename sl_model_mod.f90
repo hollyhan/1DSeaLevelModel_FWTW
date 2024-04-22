@@ -581,8 +581,11 @@ module sl_model_mod
       !     numstr2 = trim(adjustl(numstr2))
 
       !====================== topography and ice load========================
-      ! read in the initial iceload from the coupled ice input folder
-      call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
+      if (.not.(coupling)) then
+         ! read in the initial iceload from the coupled ice input folder
+          call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
+      endif
+
       !  Initialize topography (STEP 1)
       if (initial_topo) then
          write(unit_num,*) 'Reading in initial topo file'
@@ -632,6 +635,8 @@ module sl_model_mod
                    icexy(i,j,nfiles) = 0.0
                 enddo
              enddo
+          else
+             call read_sl(icexy(:,:,1), icemodel, inputfolder_ice, suffix=numstr)
           endif
 
           do j = 1,2*nglv
@@ -847,8 +852,6 @@ module sl_model_mod
             write(numstr,'(I6)') j
             numstr = trim(adjustl(numstr))
 
-            ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
-            call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
 
             ! ice thickness at the current time step inside the ISM domain is provided by the ISM
             ! merge iceload configuration
@@ -858,6 +861,9 @@ module sl_model_mod
                      icexy(i,j,nfiles) = 0.0
                   enddo
                enddo
+            else
+               ! read in ice thickness at the current time step outside the ISM domain from 'inputfolder_ice'
+               call read_sl(icexy(:,:,nfiles), icemodel, inputfolder_ice, suffix=numstr)
             endif
 
             do j = 1,2*nglv
